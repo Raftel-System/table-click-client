@@ -16,7 +16,7 @@ const CartPage: React.FC = () => {
     });
     const [orderType, setOrderType] = useState<'takeaway' | 'delivery'>('delivery');
 
-    const handleRemoveItem = (itemId: string, itemName: string) => {
+    const handleRemoveItem = (itemId: string) => {
         removeFromCart(itemId);
     };
 
@@ -24,7 +24,7 @@ const CartPage: React.FC = () => {
         if (newQuantity === 0) {
             const item = cartItems.find(i => i.id === itemId);
             if (item) {
-                handleRemoveItem(itemId, item.name);
+                handleRemoveItem(itemId);
             }
         } else {
             updateQuantity(itemId, newQuantity);
@@ -57,7 +57,8 @@ const CartPage: React.FC = () => {
             clearCart();
             navigate('/menu');
 
-        } catch (error) {
+        } catch (err) {
+            console.log('err', err);
             alert('❌ Erreur lors de la commande. Veuillez réessayer.');
             setShowCheckout(false);
         }
@@ -235,7 +236,7 @@ const CartPage: React.FC = () => {
                                 <p className="text-gray-400 text-sm capitalize">{item.category.replace('s', '')}</p>
                             </div>
                             <button
-                                onClick={() => handleRemoveItem(item.id, item.name)}
+                                onClick={() => handleRemoveItem(item.id)}
                                 className="text-red-500 hover:text-red-400 transition-colors p-2"
                             >
                                 <Trash2 size={20} />
