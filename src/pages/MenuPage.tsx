@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // Import des composants
 import CategoriesSlider from '../components/menu/CategoriesSlider';
@@ -10,32 +11,13 @@ import BottomNavigation from '../components/BottomNavigation';
 import { realMenuCategories, realMenuItems } from '../data/menuData';
 import type {MenuItem} from "@/contexts/CartContext";
 import MenuItems from '../components/menu/MenuItems';
-// Mock hooks
-const useCart = () => ({
-    addToCart: (item: MenuItem, quantity = 1, instructions?: string) => {
-        console.log('Ajout au panier:', {
-            item: item.name,
-            quantity,
-            instructions,
-            total: item.price * quantity
-        });
-        return new Promise<void>((resolve) => {
-            setTimeout(() => {
-                alert(`✅ ${item.name} ajouté au panier!\nQuantité: ${quantity}\n${instructions ? `Instructions: ${instructions}` : ''}`);
-                resolve();
-            }, 500);
-        });
-    },
-    getCartItemsCount: () => 5
-});
-
-const useNavigate = () => (path: string) => console.log('Navigation vers:', path);
+import { useCart } from '../contexts/CartContext';
 
 const MenuPage: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState('breakfast');
     const [showItemDetail, setShowItemDetail] = useState<MenuItem | null>(null);
     const { addToCart, getCartItemsCount } = useCart();
-    const navigate = useNavigate();
+    const navigate = useNavigate(); // Utiliser le vrai hook de react-router-dom
 
     // Filtrer les items selon la catégorie sélectionnée
     const filteredItems = realMenuItems.filter(item =>
@@ -55,6 +37,11 @@ const MenuPage: React.FC = () => {
     // Gestion de l'ajout au panier depuis la modal
     const handleAddToCart = async (item: MenuItem, quantity: number, instructions?: string) => {
         await addToCart(item, quantity, instructions);
+    };
+
+    // Gestion de la navigation
+    const handleNavigate = (path: string) => {
+        navigate(path);
     };
 
     // Obtenir la catégorie actuelle
@@ -142,7 +129,7 @@ const MenuPage: React.FC = () => {
             <BottomNavigation
                 currentPath="menu"
                 cartItemsCount={getCartItemsCount()}
-                onNavigate={navigate}
+                onNavigate={handleNavigate}
             />
 
             {/* Item Detail Modal Component */}

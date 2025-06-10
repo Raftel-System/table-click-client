@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     ShoppingCart,
     Trash2,
@@ -19,30 +20,7 @@ import {
     Loader2
 } from 'lucide-react';
 
-// Types
-interface CartItem {
-    cartItemId: string;
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    category: string;
-    emoji: string;
-    quantity: number;
-    instructions?: string;
-    addedAt: number;
-    isPopular?: boolean;
-    isSpecial?: boolean;
-}
-
-interface CartSummary {
-    subtotal: number;
-    deliveryFee: number;
-    serviceFee: number;
-    total: number;
-    itemsCount: number;
-    uniqueItemsCount: number;
-}
+import { useCart } from '../contexts/CartContext';
 
 interface CustomerInfo {
     name: string;
@@ -50,84 +28,6 @@ interface CustomerInfo {
     email: string;
     address: string;
 }
-
-// Mock data et hooks
-const mockCartItems: CartItem[] = [
-    {
-        cartItemId: 'cart_1',
-        id: '1',
-        name: 'Petit Déjeuner O2 Ice',
-        description: 'Jus Fraîches, Beurre, Confiture, Fromage',
-        price: 60,
-        category: 'breakfast',
-        emoji: '🌅',
-        quantity: 2,
-        instructions: 'Sans olive noires, jus d\'orange fraîche',
-        addedAt: Date.now() - 300000,
-        isSpecial: true
-    },
-    {
-        cartItemId: 'cart_2',
-        id: '4',
-        name: 'Tajine de Poulet aux Olives',
-        description: 'Poulet mijoté avec olives vertes',
-        price: 70,
-        category: 'tajines',
-        emoji: '🍲',
-        quantity: 1,
-        addedAt: Date.now() - 200000,
-        isPopular: true
-    },
-    {
-        cartItemId: 'cart_3',
-        id: '5',
-        name: 'Pizza O2 Ice',
-        description: 'Mozzarella, Sauce tomate, jambon de dinde',
-        price: 60,
-        category: 'pizzas',
-        emoji: '🍕',
-        quantity: 1,
-        instructions: 'Bien cuite, fromage extra',
-        addedAt: Date.now() - 100000,
-        isSpecial: true
-    }
-];
-
-const useCart = () => ({
-    cartItems: mockCartItems,
-    isLoading: false,
-    removeFromCart: async (cartItemId: string) => {
-        console.log('Supprimer:', cartItemId);
-        await new Promise(resolve => setTimeout(resolve, 500));
-    },
-    updateQuantity: async (cartItemId: string, quantity: number) => {
-        console.log('Quantité:', cartItemId, quantity);
-        await new Promise(resolve => setTimeout(resolve, 300));
-    },
-    updateInstructions: async (cartItemId: string, instructions: string) => {
-        console.log('Instructions:', cartItemId, instructions);
-        await new Promise(resolve => setTimeout(resolve, 300));
-    },
-    duplicateCartItem: async (cartItemId: string) => {
-        console.log('Dupliquer:', cartItemId);
-        await new Promise(resolve => setTimeout(resolve, 300));
-    },
-    clearCart: async () => {
-        console.log('Vider panier');
-        await new Promise(resolve => setTimeout(resolve, 500));
-    },
-    getCartSummary: (deliveryType: 'delivery' | 'pickup' = 'delivery'): CartSummary => ({
-        subtotal: 250,
-        deliveryFee: deliveryType === 'delivery' ? 10 : 0,
-        serviceFee: 12.5,
-        total: deliveryType === 'delivery' ? 272.5 : 262.5,
-        itemsCount: 4,
-        uniqueItemsCount: 3
-    }),
-    validateCart: () => ({ isValid: true, errors: [] })
-});
-
-const useNavigate = () => (path: string) => console.log('Navigation:', path);
 
 const CartPage: React.FC = () => {
     const {
@@ -142,7 +42,7 @@ const CartPage: React.FC = () => {
         validateCart
     } = useCart();
 
-    const navigate = useNavigate();
+    const navigate = useNavigate(); // Utiliser le vrai hook de react-router-dom
 
     // États locaux
     const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
@@ -760,85 +660,6 @@ const CartPage: React.FC = () => {
                     </div>
                 </div>
             )}
-
-            {/* Styles CSS pour les animations */}
-            <style jsx>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                
-                @keyframes slideUp {
-                    from { transform: translateY(100%); }
-                    to { transform: translateY(0); }
-                }
-                
-                .animate-fade-in {
-                    animation: fadeIn 0.3s ease-out;
-                }
-                
-                .animate-slide-up {
-                    animation: slideUp 0.4s ease-out;
-                }
-                
-                /* Effet de charge pour les boutons */
-                .loading-pulse {
-                    position: relative;
-                    overflow: hidden;
-                }
-                
-                .loading-pulse::after {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-                    animation: loading-sweep 1.5s infinite;
-                }
-                
-                @keyframes loading-sweep {
-                    0% { left: -100%; }
-                    100% { left: 100%; }
-                }
-                
-                /* Amélioration du focus */
-                .focus-ring:focus {
-                    outline: 2px solid rgb(234 179 8);
-                    outline-offset: 2px;
-                }
-                
-                /* Animation des cartes */
-                .cart-item-card {
-                    transition: all 0.3s ease;
-                }
-                
-                .cart-item-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-                }
-                
-                /* Indicateur de traitement */
-                .processing-overlay {
-                    position: relative;
-                }
-                
-                .processing-overlay::before {
-                    content: '';
-                    position: absolute;
-                    inset: 0;
-                    background: rgba(0, 0, 0, 0.3);
-                    border-radius: inherit;
-                    pointer-events: none;
-                    opacity: 0;
-                    transition: opacity 0.3s ease;
-                }
-                
-                .processing-overlay.processing::before {
-                    opacity: 1;
-                }
-            `}</style>
         </div>
     );
 };

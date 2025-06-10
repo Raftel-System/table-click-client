@@ -91,82 +91,116 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             onClick={handleBackdropClick}
         >
             <div
-                className="bg-gray-900 rounded-t-3xl w-full max-h-[95vh] overflow-y-auto border-t border-gray-700 animate-in slide-in-from-bottom duration-500"
+                className="bg-gray-900 rounded-t-3xl w-full h-[70vh] max-h-[70vh] border-t border-gray-700 animate-in slide-in-from-bottom duration-500 flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Handle bar */}
-                <div className="w-12 h-1 bg-gray-600 rounded-full mx-auto mt-4 mb-2"></div>
+                {/* Header fixe avec handle et close button */}
+                <div className="flex-shrink-0 relative">
+                    {/* Handle bar */}
+                    <div className="w-12 h-1 bg-gray-600 rounded-full mx-auto mt-4 mb-2"></div>
 
-                {/* Close button */}
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10 bg-gray-800/80 backdrop-blur-sm rounded-full p-2 hover:bg-gray-700"
-                >
-                    <X size={20} />
-                </button>
+                    {/* Close button */}
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10 bg-gray-800/80 backdrop-blur-sm rounded-full p-2 hover:bg-gray-700"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
 
-                <div className="px-6 pb-8">
-                    {/* Image avec overlay */}
-                    <div className="relative mb-6 mt-2">
-                        <img
-                            src={getImageUrl(item)}
-                            alt={item.name}
-                            className="w-full h-64 object-cover rounded-2xl shadow-2xl"
-                        />
+                {/* Tout le contenu scrollable */}
+                <div className="flex-1 overflow-y-auto px-6 pb-6 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+                    {/* Image avec overlay - seulement si photo existe */}
+                    {item.photo && (
+                        <div className="relative mb-6 mt-2">
+                            <img
+                                src={getImageUrl(item)}
+                                alt={item.name}
+                                className="w-full h-48 object-cover rounded-2xl shadow-2xl"
+                            />
 
-                        {/* Gradient overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-2xl"></div>
+                            {/* Gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-2xl"></div>
 
-                        {/* Badges overlay */}
-                        <div className="absolute top-4 left-4 flex gap-2">
-                            {item.isPopular && (
-                                <div className="bg-blue-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1">
-                                    <Flame size={12} />
-                                    POPULAIRE
-                                </div>
-                            )}
-                            {item.isSpecial && (
-                                <div className="bg-purple-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1">
-                                    <Star size={12} />
-                                    SPÉCIAL
-                                </div>
-                            )}
+                            {/* Badges overlay */}
+                            <div className="absolute top-3 left-3 flex gap-2">
+                                {item.isPopular && (
+                                    <div className="bg-blue-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                        <Flame size={10} />
+                                        POPULAIRE
+                                    </div>
+                                )}
+                                {item.isSpecial && (
+                                    <div className="bg-purple-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                        <Star size={10} />
+                                        SPÉCIAL
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Prix en overlay */}
+                            <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-sm rounded-full px-3 py-1.5">
+                                <span className="text-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                                    {item.price}DH
+                                </span>
+                            </div>
                         </div>
-
-                        {/* Prix en overlay */}
-                        <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-sm rounded-full px-4 py-2">
-                            <span className="text-2xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
-                                {item.price}DH
-                            </span>
-                        </div>
-                    </div>
+                    )}
 
                     {/* Item info */}
                     <div className="mb-6">
-                        <h3 className="text-3xl font-bold text-white mb-3">
-                            {item.name} {item.emoji}
-                        </h3>
-                        <p className="text-gray-300 leading-relaxed text-base">
+                        <div className="flex items-start justify-between mb-3">
+                            <h3 className="text-2xl font-bold text-white flex-1">
+                                {item.name} {item.emoji}
+                            </h3>
+                            {/* Prix affiché ici si pas d'image */}
+                            {!item.photo && (
+                                <div className="bg-gray-800/50 backdrop-blur-sm rounded-full px-3 py-1.5 ml-3">
+                                    <span className="text-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                                        {item.price}DH
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Badges si pas d'image */}
+                        {!item.photo && (
+                            <div className="flex gap-2 mb-3">
+                                {item.isPopular && (
+                                    <div className="bg-blue-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                        <Flame size={10} />
+                                        POPULAIRE
+                                    </div>
+                                )}
+                                {item.isSpecial && (
+                                    <div className="bg-purple-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                        <Star size={10} />
+                                        SPÉCIAL
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <p className="text-gray-300 leading-relaxed text-sm">
                             {item.description}
                         </p>
                     </div>
-
                     {/* Quantity selector */}
                     <div className="mb-6">
-                        <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <h4 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
                             📦 Quantité
                         </h4>
-                        <div className="flex items-center justify-center gap-6 bg-gray-800/50 backdrop-blur-sm rounded-2xl py-6 border border-gray-700/50">
+                        <div className="flex items-center justify-center gap-4 bg-gray-800/50 backdrop-blur-sm rounded-xl py-4 border border-gray-700/50">
                             <button
                                 onClick={() => handleQuantityChange(quantity - 1)}
                                 disabled={quantity <= 1}
-                                className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-600 hover:border-gray-500"
+                                className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-600 hover:border-gray-500"
                             >
-                                <Minus size={20} className="text-white" />
+                                <Minus size={18} className="text-white" />
                             </button>
 
-                            <div className="text-center">
-                                <span className="text-4xl font-bold text-white block">
+                            <div className="text-center min-w-[4rem]">
+                                <span className="text-3xl font-bold text-white block">
                                     {quantity}
                                 </span>
                                 <span className="text-xs text-gray-400">
@@ -177,25 +211,26 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             <button
                                 onClick={() => handleQuantityChange(quantity + 1)}
                                 disabled={quantity >= 99}
-                                className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors border border-gray-600 hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors border border-gray-600 hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Plus size={20} className="text-white" />
+                                <Plus size={18} className="text-white" />
                             </button>
                         </div>
                     </div>
 
                     {/* Instructions spéciales */}
-                    <div className="mb-8">
-                        <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            📝 Instructions spéciales <span className="text-sm font-normal text-gray-400">(optionnel)</span>
+                    <div className="mb-6">
+                        <h4 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            📝 Instructions spéciales
+                            <span className="text-sm font-normal text-gray-400">(optionnel)</span>
                         </h4>
                         <div className="relative">
                             <textarea
                                 value={instructions}
                                 onChange={(e) => setInstructions(e.target.value)}
                                 placeholder="Ex: Sans oignons, bien cuit, sauce à part, allergie aux fruits de mer..."
-                                className="w-full bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 text-white placeholder-gray-400 resize-none focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-300 min-h-[100px]"
-                                rows={4}
+                                className="w-full bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 text-white placeholder-gray-400 resize-none focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-300 min-h-[80px]"
+                                rows={3}
                                 maxLength={200}
                             />
                             <div className="absolute bottom-3 right-3 text-xs text-gray-500 bg-gray-900/80 px-2 py-1 rounded">
@@ -209,72 +244,74 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                         )}
                     </div>
 
-                    {/* Résumé et total */}
-                    <div className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/30 mb-6">
-                        <h4 className="text-lg font-bold text-white mb-4">📋 Résumé de votre commande</h4>
+                    {/* Note de service */}
+                    <p className="text-center text-xs text-gray-500 mb-4 flex items-center justify-center gap-1">
+                        <span>⏱️</span>
+                        Les instructions spéciales peuvent affecter le temps de préparation
+                    </p>
 
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-300">{item.name}</span>
-                                <span className="text-white font-medium">{item.price} DH</span>
-                            </div>
-
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-300">Quantité</span>
-                                <span className="text-white font-medium">× {quantity}</span>
-                            </div>
-
-                            {instructions.trim() && (
-                                <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
-                                    <p className="text-xs text-blue-400 font-medium mb-1 flex items-center gap-1">
-                                        <MessageSquare size={12} />
-                                        Instructions spéciales:
-                                    </p>
-                                    <p className="text-sm text-blue-200">{instructions.trim()}</p>
-                                </div>
-                            )}
-
-                            <div className="h-px bg-gray-700 my-4"></div>
-
-                            <div className="flex justify-between items-center">
-                                <span className="text-lg font-bold text-white">Total:</span>
-                                <span className="text-3xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
-                                    {(item.price * quantity).toFixed(2)} DH
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Bouton d'ajout au panier */}
+                    {/* Bouton d'ajout au panier - maintenant dans la zone scrollable */}
                     <button
                         onClick={handleAddToCart}
                         disabled={isProcessing}
-                        className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black py-4 rounded-xl font-bold text-lg hover:from-yellow-400 hover:to-orange-400 transition-all duration-300 flex items-center justify-center gap-3 shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black py-3.5 rounded-xl font-bold text-lg hover:from-yellow-400 hover:to-orange-400 transition-all duration-300 flex items-center justify-center gap-3 shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mb-4"
                     >
                         {isProcessing ? (
                             <>
-                                <Loader2 size={24} className="animate-spin" />
+                                <Loader2 size={22} className="animate-spin" />
                                 <span>Ajout en cours...</span>
                             </>
                         ) : (
                             <>
-                                <ShoppingCart size={24} />
+                                <ShoppingCart size={22} />
                                 <span>
                                     Ajouter au panier • {quantity} {quantity > 1 ? 'articles' : 'article'}
                                 </span>
                             </>
                         )}
                     </button>
-
-                    {/* Note de service */}
-                    <p className="text-center text-xs text-gray-500 mt-4 flex items-center justify-center gap-1">
-                        <span>⏱️</span>
-                        Les instructions spéciales peuvent affecter le temps de préparation
-                    </p>
                 </div>
             </div>
 
+            <style jsx>{`
+                /* Custom scrollbar */
+                .scrollbar-thin {
+                    scrollbar-width: thin;
+                }
 
+                .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+                    background-color: rgb(75, 85, 99);
+                    border-radius: 0.375rem;
+                }
+
+                .scrollbar-track-gray-800::-webkit-scrollbar-track {
+                    background-color: rgb(31, 41, 55);
+                    border-radius: 0.375rem;
+                }
+
+                .scrollbar-thin::-webkit-scrollbar {
+                    width: 6px;
+                }
+
+                /* Animation personnalisée pour le slide */
+                @keyframes slide-in-from-bottom {
+                    from {
+                        transform: translateY(100%);
+                    }
+                    to {
+                        transform: translateY(0);
+                    }
+                }
+
+                .slide-in-from-bottom {
+                    animation: slide-in-from-bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                /* Smooth scrolling */
+                .overflow-y-auto {
+                    scroll-behavior: smooth;
+                }
+            `}</style>
         </div>
     );
 };
