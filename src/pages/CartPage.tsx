@@ -10,10 +10,6 @@ import {
     Home,
     Edit3,
     Copy,
-    MapPin,
-    Phone,
-    Mail,
-    User,
     MessageSquare,
     CheckCircle,
     AlertCircle,
@@ -21,13 +17,6 @@ import {
 } from 'lucide-react';
 
 import { useCart } from '../contexts/CartContext';
-
-interface CustomerInfo {
-    name: string;
-    phone: string;
-    email: string;
-    address: string;
-}
 
 const CartPage: React.FC = () => {
     const {
@@ -51,13 +40,6 @@ const CartPage: React.FC = () => {
     const [tempInstructions, setTempInstructions] = useState('');
     const [orderNote, setOrderNote] = useState('');
     const [processingItems, setProcessingItems] = useState<Set<string>>(new Set());
-
-    const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-        name: '',
-        phone: '',
-        email: '',
-        address: ''
-    });
 
     // Calculs
     const cartSummary = getCartSummary(orderType);
@@ -145,17 +127,6 @@ const CartPage: React.FC = () => {
     }, [duplicateCartItem]);
 
     const handleCheckout = async () => {
-        // Validation des informations client
-        if (!customerInfo.name.trim() || !customerInfo.phone.trim() || !customerInfo.email.trim()) {
-            alert('⚠️ Veuillez remplir toutes vos informations de contact');
-            return;
-        }
-
-        if (orderType === 'delivery' && !customerInfo.address.trim()) {
-            alert('⚠️ Veuillez saisir votre adresse de livraison');
-            return;
-        }
-
         if (!cartValidation.isValid) {
             alert('⚠️ Votre panier contient des erreurs: ' + cartValidation.errors.join(', '));
             return;
@@ -277,73 +248,6 @@ const CartPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Informations client */}
-                <div className="mb-8">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        👤 Vos informations
-                    </h3>
-                    <div className="bg-gray-900/40 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                                    <User size={16} />
-                                    Nom complet *
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Votre nom complet"
-                                    value={customerInfo.name}
-                                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
-                                    className="w-full bg-gray-800/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                                    <Phone size={16} />
-                                    Téléphone *
-                                </label>
-                                <input
-                                    type="tel"
-                                    placeholder="+212 6 XX XX XX XX"
-                                    value={customerInfo.phone}
-                                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
-                                    className="w-full bg-gray-800/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                                    <Mail size={16} />
-                                    Email *
-                                </label>
-                                <input
-                                    type="email"
-                                    placeholder="votre@email.com"
-                                    value={customerInfo.email}
-                                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
-                                    className="w-full bg-gray-800/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all"
-                                />
-                            </div>
-
-                            {orderType === 'delivery' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                                        <MapPin size={16} />
-                                        Adresse de livraison *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="Adresse complète"
-                                        value={customerInfo.address}
-                                        onChange={(e) => setCustomerInfo(prev => ({ ...prev, address: e.target.value }))}
-                                        className="w-full bg-gray-800/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
 
                 {/* Articles du panier */}
                 <div className="mb-8">
@@ -358,12 +262,6 @@ const CartPage: React.FC = () => {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
                                             <h4 className="font-bold text-lg text-white">{item.name} {item.emoji}</h4>
-                                            {item.isPopular && (
-                                                <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">🔥 POPULAIRE</span>
-                                            )}
-                                            {item.isSpecial && (
-                                                <span className="bg-purple-500 text-white px-2 py-1 rounded-full text-xs font-bold">⭐ SPÉCIAL</span>
-                                            )}
                                         </div>
                                         <p className="text-gray-400 text-sm">{item.description}</p>
                                         <p className="text-xs text-gray-500 mt-1">

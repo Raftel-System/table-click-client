@@ -5,14 +5,12 @@ import { useNavigate } from 'react-router-dom';
 // Import des composants
 import CategoriesSlider from '../components/menu/CategoriesSlider/CategoriesSlider';
 import ItemDetailModal from '../components/menu/ItemDetailModal/ItemDetailModal';
+import MenuItems from '../components/menu/MenuItems/MenuItems';
 import BottomNavigation from '../components/BottomNavigation';
 
-// Import des données
+// Import des données et types
 import { realMenuCategories, realMenuItems } from '../data/menuData';
-import type {MenuItem} from "@/contexts/CartContext";
-
-import { useCart } from '../contexts/CartContext';
-import MenuItems from "@/components/menu/MenuItems/MenuItems";
+import {type MenuItem, useCart} from '../contexts/CartContext';
 
 const MenuPage: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState('breakfast');
