@@ -1,3 +1,4 @@
+// src/components/BottomNavigation.tsx
 import React from 'react';
 import { Home, ShoppingCart } from 'lucide-react';
 

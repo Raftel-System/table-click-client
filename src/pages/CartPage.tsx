@@ -1,5 +1,6 @@
+// src/pages/CartPage.tsx
 import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
     ShoppingCart,
     Trash2,
@@ -19,6 +20,8 @@ import {
 import { useCart } from '../contexts/CartContext';
 
 const CartPage: React.FC = () => {
+    const { restaurantSlug } = useParams<{ restaurantSlug: string }>();
+    const navigate = useNavigate();
     const {
         cartItems,
         isLoading,
@@ -30,8 +33,6 @@ const CartPage: React.FC = () => {
         getCartSummary,
         validateCart
     } = useCart();
-
-    const navigate = useNavigate(); // Utiliser le vrai hook de react-router-dom
 
     // États locaux
     const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
@@ -45,7 +46,13 @@ const CartPage: React.FC = () => {
     const cartSummary = getCartSummary(orderType);
     const cartValidation = validateCart();
 
-    // Gestion des actions
+    // Navigation avec slug
+    const navigateWithSlug = (path: string) => {
+        const basePath = `/${restaurantSlug}`;
+        navigate(basePath + path);
+    };
+
+    // Gestion des actions (reste identique)
     const handleRemoveItem = useCallback(async (cartItemId: string) => {
         setProcessingItems(prev => new Set(prev).add(cartItemId));
         try {
@@ -140,7 +147,7 @@ const CartPage: React.FC = () => {
 
             alert(`🎉 Commande confirmée !\nTotal: ${cartSummary.total.toFixed(2)} DH\nType: ${orderType === 'delivery' ? 'Livraison' : 'À emporter'}`);
             await clearCart();
-            navigate('/menu');
+            navigateWithSlug('/menu');
         } catch (error) {
             console.error('Erreur commande:', error);
             alert('❌ Erreur lors de la commande. Veuillez réessayer.');
@@ -148,6 +155,11 @@ const CartPage: React.FC = () => {
             setShowCheckout(false);
         }
     };
+
+    // Obtenir le nom du restaurant formaté
+    const restaurantName = restaurantSlug
+        ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())
+        : 'Restaurant';
 
     // Rendu panier vide
     if (cartItems.length === 0 && !showCheckout) {
@@ -158,7 +170,10 @@ const CartPage: React.FC = () => {
                         <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-3 py-1 rounded-full">
                             <span className="font-bold text-lg">O2</span>
                         </div>
-                        <h1 className="text-xl font-bold">Panier</h1>
+                        <div className="text-center">
+                            <h1 className="text-xl font-bold">Panier</h1>
+                            <p className="text-xs text-gray-400">{restaurantName}</p>
+                        </div>
                         <div className="w-16"></div>
                     </div>
                 </header>
@@ -172,7 +187,7 @@ const CartPage: React.FC = () => {
                         Découvrez nos délicieux plats et ajoutez vos favoris au panier pour commencer votre commande
                     </p>
                     <button
-                        onClick={() => navigate('/menu')}
+                        onClick={() => navigateWithSlug('/menu')}
                         className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-8 py-4 rounded-full font-bold text-lg hover:from-yellow-400 hover:to-orange-400 transition-all transform hover:scale-105 shadow-lg"
                     >
                         🍽️ Découvrir le menu
@@ -182,7 +197,7 @@ const CartPage: React.FC = () => {
                 <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-md border-t border-gray-800 z-50">
                     <div className="flex">
                         <button
-                            onClick={() => navigate('/menu')}
+                            onClick={() => navigateWithSlug('/menu')}
                             className="flex-1 flex flex-col items-center gap-1 py-4 text-gray-400 hover:text-yellow-500 transition-colors"
                         >
                             <Home size={24} />
@@ -206,9 +221,12 @@ const CartPage: React.FC = () => {
                     <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-3 py-1 rounded-full">
                         <span className="font-bold text-lg">O2</span>
                     </div>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
-                        Mon Panier
-                    </h1>
+                    <div className="text-center">
+                        <h1 className="text-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                            Mon Panier
+                        </h1>
+                        <p className="text-xs text-gray-400">{restaurantName}</p>
+                    </div>
                     <div className="w-16"></div>
                 </div>
             </header>
@@ -247,7 +265,6 @@ const CartPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
-
 
                 {/* Articles du panier */}
                 <div className="mb-8">
@@ -487,7 +504,7 @@ const CartPage: React.FC = () => {
                     <div className="flex gap-3">
                         {/* Bouton retour menu */}
                         <button
-                            onClick={() => navigate('/menu')}
+                            onClick={() => navigateWithSlug('/menu')}
                             className="flex items-center justify-center gap-2 bg-gray-700 text-white px-4 py-3 rounded-xl hover:bg-gray-600 transition-colors"
                         >
                             <Home size={18} />
