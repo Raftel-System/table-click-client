@@ -1,4 +1,4 @@
-// src/pages/MenuPage.tsx
+// src/pages/MenuPage.tsx - Version avec thème dynamique
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, AlertCircle, RefreshCw } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -9,8 +9,9 @@ import ItemDetailModal from '../components/menu/ItemDetailModal/ItemDetailModal'
 import MenuItems from '../components/menu/MenuItems/MenuItems';
 import BottomNavigation from '../components/BottomNavigation';
 
-// Import du hook Firebase et des types
+// Import des hooks
 import { useRestaurantData } from '../hooks/useRestaurantData';
+import { useTheme } from '../hooks/useTheme';
 import { type MenuItem, useCart } from '../contexts/CartContext';
 
 const MenuPage: React.FC = () => {
@@ -22,8 +23,13 @@ const MenuPage: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [showItemDetail, setShowItemDetail] = useState<MenuItem | null>(null);
 
-    // Récupération des données Firebase
-    const { categories, items, loading, error, refetch } = useRestaurantData(restaurantSlug || '');
+    // Hooks pour les données et le thème
+    const { categories, items, loading: dataLoading, error: dataError, refetch } = useRestaurantData(restaurantSlug || '');
+    const { theme, loading: themeLoading, error: themeError } = useTheme(restaurantSlug || '');
+
+    // Loading combiné
+    const loading = dataLoading || themeLoading;
+    const error = dataError || themeError;
 
     // Sélectionner automatiquement la première catégorie
     useEffect(() => {
@@ -64,11 +70,19 @@ const MenuPage: React.FC = () => {
     // Rendu du loading
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white flex items-center justify-center">
+            <div className="min-h-screen theme-bg-gradient text-white flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-500 mx-auto mb-6"></div>
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-current mx-auto mb-6 theme-primary-text"></div>
                     <h2 className="text-2xl font-bold mb-2">Chargement du menu</h2>
-                    <p className="text-gray-400">Récupération des données...</p>
+                    <p className="theme-secondary-text">
+                        {themeLoading && 'Chargement du thème...'}
+                        {dataLoading && 'Récupération des données...'}
+                    </p>
+                    {theme && (
+                        <p className="text-xs theme-secondary-text mt-2">
+                            🎨 Thème: {theme.nom}
+                        </p>
+                    )}
                 </div>
             </div>
         );
@@ -77,17 +91,17 @@ const MenuPage: React.FC = () => {
     // Rendu des erreurs
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white flex items-center justify-center p-4">
+            <div className="min-h-screen theme-bg-gradient text-white flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
                     <div className="bg-red-900/20 rounded-full p-6 mb-6 inline-block">
-                        <AlertCircle size={48} className="text-red-500" />
+                        <AlertCircle size={48} className="theme-alert-text" />
                     </div>
-                    <h2 className="text-2xl font-bold mb-3 text-red-400">Erreur de chargement</h2>
-                    <p className="text-gray-400 mb-6">{error}</p>
+                    <h2 className="text-2xl font-bold mb-3 theme-alert-text">Erreur de chargement</h2>
+                    <p className="theme-secondary-text mb-6">{error}</p>
                     <div className="space-y-3">
                         <button
                             onClick={refetch}
-                            className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-6 py-3 rounded-full font-bold hover:from-yellow-400 hover:to-orange-400 transition-all flex items-center gap-2 mx-auto"
+                            className="theme-primary-gradient text-black px-6 py-3 rounded-full font-bold theme-primary-hover transition-all flex items-center gap-2 mx-auto"
                         >
                             <RefreshCw size={18} />
                             Réessayer
@@ -107,13 +121,13 @@ const MenuPage: React.FC = () => {
     // Rendu si aucune donnée
     if (categories.length === 0) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white flex items-center justify-center p-4">
+            <div className="min-h-screen theme-bg-gradient text-white flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
                     <div className="bg-gray-800/30 rounded-full p-6 mb-6 inline-block">
                         <ShoppingCart size={48} className="text-gray-500" />
                     </div>
                     <h2 className="text-2xl font-bold mb-3">Restaurant non trouvé</h2>
-                    <p className="text-gray-400 mb-6">
+                    <p className="theme-secondary-text mb-6">
                         Le restaurant "{restaurantSlug}" n'existe pas ou n'a pas encore été configuré.
                     </p>
 
@@ -130,7 +144,7 @@ const MenuPage: React.FC = () => {
 
                     <button
                         onClick={() => navigate('/talya-bercy/menu')}
-                        className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-6 py-3 rounded-full font-bold hover:from-yellow-400 hover:to-orange-400 transition-all"
+                        className="theme-primary-gradient text-black px-6 py-3 rounded-full font-bold theme-primary-hover transition-all"
                     >
                         Retourner à l'accueil
                     </button>
@@ -140,23 +154,29 @@ const MenuPage: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white">
+        <div className="min-h-screen theme-bg-gradient text-white">
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800/50 shadow-2xl">
+            <header className="sticky top-0 z-50 theme-header-bg theme-border border-b theme-shadow">
                 <div className="flex items-center justify-between px-4 py-3">
                     {/* Logo */}
-                    <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-4 py-2 rounded-full shadow-lg">
+                    <div className="flex items-center gap-2 theme-button-primary px-4 py-2 rounded-full theme-shadow-lg">
                         <span className="font-bold text-lg">O2</span>
                     </div>
 
                     {/* Titre */}
                     <div className="flex-1 text-center">
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                        <h1 className="text-xl font-bold theme-gradient-text">
                             Menu
                         </h1>
                         {restaurantSlug && (
-                            <p className="text-xs text-gray-400 capitalize">
+                            <p className="text-xs theme-secondary-text capitalize">
                                 {restaurantSlug.replace('-', ' ')}
+                            </p>
+                        )}
+                        {/* Indicateur de thème en dev */}
+                        {process.env.NODE_ENV === 'development' && theme && (
+                            <p className="text-xs theme-accent-text">
+                                🎨 {theme.id}
                             </p>
                         )}
                     </div>
@@ -164,7 +184,7 @@ const MenuPage: React.FC = () => {
                     {/* Bouton panier */}
                     <button
                         onClick={() => navigate(`/${restaurantSlug}/cart`)}
-                        className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-4 py-2 rounded-full flex items-center gap-2 font-medium hover:from-yellow-400 hover:to-orange-400 transition-all transform hover:scale-105 shadow-lg relative"
+                        className="theme-button-primary px-4 py-2 rounded-full flex items-center gap-2 font-medium transition-all transform hover:scale-105 theme-shadow-lg relative"
                     >
                         <ShoppingCart size={18} />
                         <span className="hidden sm:inline">Panier</span>
@@ -178,10 +198,10 @@ const MenuPage: React.FC = () => {
 
                 {/* Titre restaurant */}
                 <div className="text-center pb-4">
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                    <h1 className="text-3xl font-bold theme-gradient-text">
                         {restaurantSlug ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Restaurant'}
                     </h1>
-                    <p className="text-sm text-gray-400 mt-1 flex items-center justify-center gap-2">
+                    <p className="text-sm theme-secondary-text mt-1 flex items-center justify-center gap-2">
                         <span>✨ Saveurs authentiques</span>
                         <span>•</span>
                         <span>🏆 Ambiance premium</span>
@@ -206,15 +226,15 @@ const MenuPage: React.FC = () => {
                             {currentCategory.emoji}
                         </div>
                         <div>
-                            <h2 className="text-3xl font-bold text-white">
+                            <h2 className="text-3xl font-bold theme-foreground-text">
                                 {currentCategory.name}
                             </h2>
-                            <p className="text-gray-400 text-sm mt-1">
+                            <p className="theme-secondary-text text-sm mt-1">
                                 {filteredItems.length} article{filteredItems.length > 1 ? 's' : ''} disponible{filteredItems.length > 1 ? 's' : ''}
                             </p>
                         </div>
                     </div>
-                    <div className="h-1 w-24 bg-gradient-to-r from-yellow-500 to-orange-500 mt-4 rounded-full"></div>
+                    <div className="h-1 w-24 theme-primary-gradient mt-4 rounded-full"></div>
                 </div>
             )}
 
@@ -231,7 +251,7 @@ const MenuPage: React.FC = () => {
                             <ShoppingCart size={48} className="text-gray-500" />
                         </div>
                         <h3 className="text-xl font-bold mb-2">Aucun article disponible</h3>
-                        <p className="text-gray-400">
+                        <p className="theme-secondary-text">
                             Cette catégorie ne contient aucun article disponible pour le moment.
                         </p>
                     </div>
