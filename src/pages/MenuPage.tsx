@@ -3,15 +3,16 @@ import { ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Import des composants
-import CategoriesSlider from '../components/menu/CategoriesSlider';
-import ItemDetailModal from '../components/menu/ItemDetailModal';
+import CategoriesSlider from '../components/menu/CategoriesSlider/CategoriesSlider';
+import ItemDetailModal from '../components/menu/ItemDetailModal/ItemDetailModal';
 import BottomNavigation from '../components/BottomNavigation';
 
 // Import des données
 import { realMenuCategories, realMenuItems } from '../data/menuData';
 import type {MenuItem} from "@/contexts/CartContext";
-import MenuItems from '../components/menu/MenuItems';
+
 import { useCart } from '../contexts/CartContext';
+import MenuItems from "@/components/menu/MenuItems/MenuItems";
 
 const MenuPage: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState('breakfast');

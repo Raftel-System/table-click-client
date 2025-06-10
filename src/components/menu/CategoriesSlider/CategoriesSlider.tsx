@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import './animations.css';
+import '../animations.css';
 
 export interface MenuCategory {
     id: string;

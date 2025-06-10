@@ -1,6 +1,6 @@
 import React from 'react';
 import { Star, Flame, Plus } from 'lucide-react';
-import './MenuItems.css';
+import './MenuItems.module.css';
 
 export interface MenuItem {
     id: string;

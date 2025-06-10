@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, ShoppingCart, Star, Flame, MessageSquare, Loader2 } from 'lucide-react';
-import type {MenuItem} from './MenuItems';
+import { X, Plus, Minus, ShoppingCart, Star, Flame, Loader2 } from 'lucide-react';
+import type {MenuItem} from '../MenuItems/MenuItems';
+import './ItemDetailModal.module.css';
 
 interface ItemDetailModalProps {
     item: MenuItem | null;
@@ -273,45 +274,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 </div>
             </div>
 
-            <style jsx>{`
-                /* Custom scrollbar */
-                .scrollbar-thin {
-                    scrollbar-width: thin;
-                }
 
-                .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
-                    background-color: rgb(75, 85, 99);
-                    border-radius: 0.375rem;
-                }
-
-                .scrollbar-track-gray-800::-webkit-scrollbar-track {
-                    background-color: rgb(31, 41, 55);
-                    border-radius: 0.375rem;
-                }
-
-                .scrollbar-thin::-webkit-scrollbar {
-                    width: 6px;
-                }
-
-                /* Animation personnalisée pour le slide */
-                @keyframes slide-in-from-bottom {
-                    from {
-                        transform: translateY(100%);
-                    }
-                    to {
-                        transform: translateY(0);
-                    }
-                }
-
-                .slide-in-from-bottom {
-                    animation: slide-in-from-bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-
-                /* Smooth scrolling */
-                .overflow-y-auto {
-                    scroll-behavior: smooth;
-                }
-            `}</style>
         </div>
     );
 };
