@@ -8,13 +8,15 @@ interface ItemDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     onAddToCart: (item: MenuItem, quantity: number, instructions?: string) => Promise<void>;
+    currency?: string;
 }
 
 const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                                                              item,
                                                              isOpen,
                                                              onClose,
-                                                             onAddToCart
+                                                             onAddToCart,
+                                                             currency = '€'
                                                          }) => {
     const [quantity, setQuantity] = useState(1);
     const [instructions, setInstructions] = useState('');
@@ -142,7 +144,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             {/* Prix en overlay */}
                             <div className="absolute bottom-3 right-3 theme-card-bg backdrop-blur-sm rounded-full px-3 py-1.5">
                                 <span className="text-xl font-bold theme-gradient-text">
-                                    {item.price}DH
+                                    {item.price}{currency}
                                 </span>
                             </div>
                         </div>
@@ -158,7 +160,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             {!item.photo && (
                                 <div className="theme-card-bg backdrop-blur-sm rounded-full px-3 py-1.5 ml-3">
                                     <span className="text-xl font-bold theme-gradient-text">
-                                        {item.price}DH
+                                        {item.price}{currency}
                                     </span>
                                 </div>
                             )}

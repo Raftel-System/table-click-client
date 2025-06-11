@@ -1,4 +1,4 @@
-// src/pages/CartPage.tsx - Version mise à jour avec service et sans livraison
+// src/pages/CartPage.tsx - Version mise à jour avec infos restaurant
 import React, { useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import { useCart } from '../contexts/CartContext';
+import { useRestaurantInfo } from '../hooks/useRestaurantInfo';
 import { useTheme } from '../hooks/useTheme';
 import { useOrderType } from '../contexts/OrderTypeContext';
 
@@ -38,8 +39,7 @@ const CartPage: React.FC = () => {
     } = useCart();
 
     const { orderConfig, isOrderConfigured, getOrderDisplayName, getOrderIcon, getEstimatedTime } = useOrderType();
-
-    // Hook pour le thème dynamique
+    const { restaurantInfo, loading: infoLoading } = useRestaurantInfo(restaurantSlug || '');
     const { theme, loading: themeLoading, isLightTheme } = useTheme(restaurantSlug || '');
 
     // États locaux
@@ -53,6 +53,11 @@ const CartPage: React.FC = () => {
     const cartSummary = getCartSummary('pickup'); // On utilise toujours 'pickup' car plus de livraison
     const cartValidation = validateCart();
 
+    // Informations du restaurant
+    const restaurantName = restaurantInfo?.nom ||
+        (restaurantSlug ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Restaurant');
+    const currency = restaurantInfo?.devise || '€';
+
     // Navigation avec slug
     const navigateWithSlug = (path: string) => {
         const basePath = `/${restaurantSlug}`;
@@ -61,11 +66,11 @@ const CartPage: React.FC = () => {
 
     // Rediriger vers la sélection de service si pas configuré
     React.useEffect(() => {
-        if (!themeLoading && !isOrderConfigured) {
+        if (!themeLoading && !infoLoading && !isOrderConfigured) {
             console.log('⚠️ Service non configuré, redirection depuis le panier');
             navigate(`/${restaurantSlug}/service`);
         }
-    }, [themeLoading, isOrderConfigured, navigate, restaurantSlug]);
+    }, [themeLoading, infoLoading, isOrderConfigured, navigate, restaurantSlug]);
 
     // Gestion des actions
     const handleRemoveItem = useCallback(async (cartItemId: string) => {
@@ -173,7 +178,7 @@ const CartPage: React.FC = () => {
                 ? `Table ${orderConfig.tableNumber}`
                 : 'À emporter';
 
-            alert(`🎉 Commande confirmée !\nTotal: ${cartSummary.total.toFixed(2)} DH\nService: ${serviceType}`);
+            alert(`🎉 Commande confirmée !\nTotal: ${cartSummary.total.toFixed(2)} ${currency}\nService: ${serviceType}`);
             await clearCart();
             navigateWithSlug('/menu');
         } catch (error) {
@@ -184,19 +189,17 @@ const CartPage: React.FC = () => {
         }
     };
 
-    // Obtenir le nom du restaurant formaté
-    const restaurantName = restaurantSlug
-        ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())
-        : 'Restaurant';
-
     // Loading avec thème
-    if (themeLoading) {
+    if (themeLoading || infoLoading) {
         return (
             <div className="min-h-screen theme-bg-gradient theme-foreground-text flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-current mx-auto mb-6 theme-primary-text"></div>
                     <h2 className="text-2xl font-bold mb-2">Chargement du panier</h2>
-                    <p className="theme-secondary-text">Application du thème...</p>
+                    <div className="space-y-1 theme-secondary-text">
+                        {themeLoading && <p>• Application du thème...</p>}
+                        {infoLoading && <p>• Récupération des informations...</p>}
+                    </div>
                 </div>
             </div>
         );
@@ -209,7 +212,7 @@ const CartPage: React.FC = () => {
                 <header className="sticky top-0 z-50 theme-header-bg theme-border border-b">
                     <div className="flex items-center justify-between px-4 py-3">
                         <div className="flex items-center gap-2 theme-button-primary px-3 py-1 rounded-full">
-                            <span className="font-bold text-lg">O2</span>
+                            <span className="font-bold text-lg">TC</span>
                         </div>
                         <div className="text-center">
                             <h1 className="text-xl font-bold">Panier</h1>
@@ -260,7 +263,7 @@ const CartPage: React.FC = () => {
             <header className="sticky top-0 z-50 theme-header-bg theme-border border-b theme-shadow">
                 <div className="flex items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-2 theme-button-primary px-3 py-1 rounded-full">
-                        <span className="font-bold text-lg">O2</span>
+                        <span className="font-bold text-lg">TC</span>
                     </div>
                     <div className="text-center">
                         <h1 className="text-xl font-bold theme-gradient-text">
@@ -427,7 +430,7 @@ const CartPage: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Contrôles quantité et prix avec thème */}
+                                {/* Contrôles quantité et prix avec devise */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-4">
                                         <button
@@ -461,9 +464,9 @@ const CartPage: React.FC = () => {
                                     </div>
 
                                     <div className="text-right">
-                                        <p className="text-sm theme-secondary-text">{item.price} DH × {item.quantity}</p>
+                                        <p className="text-sm theme-secondary-text">{item.price} {currency} × {item.quantity}</p>
                                         <p className="font-bold text-xl theme-gradient-text">
-                                            {(item.price * item.quantity).toFixed(2)} DH
+                                            {(item.price * item.quantity).toFixed(2)} {currency}
                                         </p>
                                     </div>
                                 </div>
@@ -492,7 +495,7 @@ const CartPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Résumé de la commande avec thème (simplifié sans frais de livraison) */}
+                {/* Résumé de la commande avec thème et devise */}
                 <div className="theme-card-bg backdrop-blur-sm rounded-2xl p-6 theme-border mb-8 theme-shadow">
                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2 theme-foreground-text">
                         📊 Résumé de la commande
@@ -501,12 +504,12 @@ const CartPage: React.FC = () => {
                     <div className="space-y-4">
                         <div className="flex justify-between items-center theme-secondary-text">
                             <span>Sous-total ({cartSummary.itemsCount} articles)</span>
-                            <span className="font-medium">{cartSummary.subtotal.toFixed(2)} DH</span>
+                            <span className="font-medium">{cartSummary.subtotal.toFixed(2)} {currency}</span>
                         </div>
 
                         <div className="flex justify-between items-center theme-secondary-text">
                             <span>Frais de service (5%)</span>
-                            <span className="font-medium">{cartSummary.serviceFee.toFixed(2)} DH</span>
+                            <span className="font-medium">{cartSummary.serviceFee.toFixed(2)} {currency}</span>
                         </div>
 
                         <div className="h-px theme-border my-4"></div>
@@ -514,7 +517,7 @@ const CartPage: React.FC = () => {
                         <div className="flex justify-between items-center">
                             <span className="text-xl font-bold theme-foreground-text">Total</span>
                             <span className="text-3xl font-bold theme-gradient-text">
-                                {cartSummary.total.toFixed(2)} DH
+                                {cartSummary.total.toFixed(2)} {currency}
                             </span>
                         </div>
                     </div>
@@ -536,7 +539,7 @@ const CartPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Bouton de commande fixe avec thème */}
+            {/* Bouton de commande fixe avec thème et devise */}
             <div className="fixed bottom-0 left-0 right-0 theme-header-bg theme-border border-t p-4 z-50">
                 <div className="max-w-4xl mx-auto">
                     <div className="flex gap-3">
@@ -563,7 +566,7 @@ const CartPage: React.FC = () => {
                             ) : (
                                 <>
                                     <CreditCard size={24} />
-                                    <span>Commander • {cartSummary.total.toFixed(2)} DH</span>
+                                    <span>Commander • {cartSummary.total.toFixed(2)} {currency}</span>
                                 </>
                             )}
                         </button>
@@ -591,7 +594,7 @@ const CartPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Overlay de traitement de commande avec thème */}
+            {/* Overlay de traitement de commande avec thème et devise */}
             {showCheckout && (
                 <div className="fixed inset-0 theme-backdrop backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="theme-modal-bg rounded-2xl p-8 text-center theme-border max-w-md w-full theme-shadow-lg">
@@ -599,15 +602,19 @@ const CartPage: React.FC = () => {
                         <h3 className="text-2xl font-bold mb-3 theme-foreground-text">Traitement de votre commande</h3>
                         <p className="theme-secondary-text mb-6">Veuillez patienter pendant que nous préparons votre commande...</p>
 
-                        {/* Détails de la commande avec thème */}
+                        {/* Détails de la commande avec thème et devise */}
                         <div className="theme-card-bg rounded-xl p-4 text-left space-y-2 backdrop-blur-sm">
+                            <div className="flex justify-between text-sm">
+                                <span className="theme-secondary-text">Restaurant:</span>
+                                <span className="theme-foreground-text font-medium">{restaurantName}</span>
+                            </div>
                             <div className="flex justify-between text-sm">
                                 <span className="theme-secondary-text">Articles:</span>
                                 <span className="theme-foreground-text font-medium">{cartSummary.itemsCount}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="theme-secondary-text">Total:</span>
-                                <span className="theme-primary-text font-bold">{cartSummary.total.toFixed(2)} DH</span>
+                                <span className="theme-primary-text font-bold">{cartSummary.total.toFixed(2)} {currency}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="theme-secondary-text">Service:</span>

@@ -11,6 +11,7 @@ import BottomNavigation from '../components/BottomNavigation';
 
 // Import des hooks
 import { useRestaurantData } from '../hooks/useRestaurantData';
+import { useRestaurantInfo } from '../hooks/useRestaurantInfo';
 import { useTheme } from '../hooks/useTheme';
 import { type MenuItem, useCart } from '../contexts/CartContext';
 import { useOrderType } from '../contexts/OrderTypeContext';
@@ -25,13 +26,14 @@ const MenuPage: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [showItemDetail, setShowItemDetail] = useState<MenuItem | null>(null);
 
-    // Hooks pour les données et le thème
+    // Hooks pour les données, infos et thème
     const { categories, items, loading: dataLoading, error: dataError, refetch } = useRestaurantData(restaurantSlug || '');
+    const { restaurantInfo, loading: infoLoading, error: infoError } = useRestaurantInfo(restaurantSlug || '');
     const { theme, loading: themeLoading, error: themeError } = useTheme(restaurantSlug || '');
 
     // Loading combiné
-    const loading = dataLoading || themeLoading;
-    const error = dataError || themeError;
+    const loading = dataLoading || themeLoading || infoLoading;
+    const error = dataError || themeError || infoError;
 
     // Vérifier si le service est configuré, sinon rediriger
     useEffect(() => {
@@ -63,7 +65,7 @@ const MenuPage: React.FC = () => {
         setShowItemDetail(null);
     };
 
-    // Gestion de l'ajout au panier depuis la modal
+    // Gestion de l'ajout au panier depuis la modal avec devise
     const handleAddToCart = async (item: MenuItem, quantity: number, instructions?: string) => {
         await addToCart(item, quantity, instructions);
     };
@@ -77,6 +79,11 @@ const MenuPage: React.FC = () => {
     // Obtenir la catégorie actuelle
     const currentCategory = categories.find(c => c.id === selectedCategory);
 
+    // Nom et devise du restaurant
+    const restaurantName = restaurantInfo?.nom ||
+        (restaurantSlug ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Restaurant');
+    const currency = restaurantInfo?.devise || '€';
+
     // Rendu du loading
     if (loading) {
         return (
@@ -84,10 +91,11 @@ const MenuPage: React.FC = () => {
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-current mx-auto mb-6 theme-primary-text"></div>
                     <h2 className="text-2xl font-bold mb-2">Chargement du menu</h2>
-                    <p className="theme-secondary-text">
-                        {themeLoading && 'Chargement du thème...'}
-                        {dataLoading && 'Récupération des données...'}
-                    </p>
+                    <div className="space-y-1 theme-secondary-text">
+                        {themeLoading && <p>• Chargement du thème...</p>}
+                        {dataLoading && <p>• Récupération des données...</p>}
+                        {infoLoading && <p>• Récupération des informations...</p>}
+                    </div>
                     {theme && (
                         <p className="text-xs theme-secondary-text mt-2">
                             🎨 Thème: {theme.nom}
@@ -198,9 +206,8 @@ const MenuPage: React.FC = () => {
                 {/* Titre restaurant et info service */}
                 <div className="text-center pb-4">
                     <h1 className="text-3xl font-bold theme-gradient-text">
-                        {restaurantSlug ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Restaurant'}
+                        {restaurantName}
                     </h1>
-
                 </div>
             </header>
 
@@ -233,12 +240,13 @@ const MenuPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Menu Items Component */}
+            {/* Menu Items Component avec devise */}
             <div className="px-4 py-6 pb-32">
                 {filteredItems.length > 0 ? (
                     <MenuItems
                         items={filteredItems}
                         onItemClick={handleOpenItemDetail}
+                        currency={currency}
                     />
                 ) : (
                     <div className="text-center py-12">
@@ -260,12 +268,13 @@ const MenuPage: React.FC = () => {
                 onNavigate={handleNavigate}
             />
 
-            {/* Item Detail Modal Component */}
+            {/* Item Detail Modal Component avec devise */}
             <ItemDetailModal
                 item={showItemDetail}
                 isOpen={!!showItemDetail}
                 onClose={handleCloseItemDetail}
                 onAddToCart={handleAddToCart}
+                currency={currency}
             />
         </div>
     );

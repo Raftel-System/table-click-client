@@ -18,9 +18,14 @@ export interface MenuItem {
 interface MenuItemsProps {
     items: MenuItem[];
     onItemClick: (item: MenuItem) => void;
+    currency?: string;
 }
 
-const MenuItems: React.FC<MenuItemsProps> = ({ items, onItemClick }) => {
+const MenuItems: React.FC<MenuItemsProps> = ({
+                                                 items,
+                                                 onItemClick,
+                                                 currency = '€'
+                                             }) => {
     const getImageUrl = (item: MenuItem) => {
         if (item.photo) {
             return `/assets/menu/${item.photo}`;
@@ -77,7 +82,7 @@ const MenuItems: React.FC<MenuItemsProps> = ({ items, onItemClick }) => {
                                     <span className="text-2xl font-bold theme-gradient-text">
                                         {item.price}
                                     </span>
-                                    <span className="text-sm theme-secondary-text font-medium">DH</span>
+                                    <span className="text-sm theme-secondary-text font-medium">{currency}</span>
                                 </div>
                                 <button
                                     onClick={() => onItemClick(item)}
