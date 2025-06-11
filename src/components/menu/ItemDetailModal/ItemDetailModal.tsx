@@ -88,11 +88,11 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
     return (
         <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end animate-in fade-in duration-300"
+            className="fixed inset-0 theme-backdrop backdrop-blur-sm z-50 flex items-end animate-in fade-in duration-300"
             onClick={handleBackdropClick}
         >
             <div
-                className="bg-gray-900 rounded-t-3xl w-full h-[70vh] max-h-[70vh] border-t border-gray-700 animate-in slide-in-from-bottom duration-500 flex flex-col"
+                className="theme-modal-bg rounded-t-3xl w-full h-[70vh] max-h-[70vh] theme-border border-t animate-in slide-in-from-bottom duration-500 flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header fixe avec handle et close button */}
@@ -103,21 +103,21 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     {/* Close button */}
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10 bg-gray-800/80 backdrop-blur-sm rounded-full p-2 hover:bg-gray-700"
+                        className="absolute top-4 right-4 theme-secondary-text hover:theme-foreground-text transition-colors z-10 theme-card-bg backdrop-blur-sm rounded-full p-2 hover:theme-button-secondary"
                     >
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Tout le contenu scrollable */}
-                <div className="flex-1 overflow-y-auto px-6 pb-6 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+                <div className="flex-1 overflow-y-auto px-6 pb-6 theme-scrollbar">
                     {/* Image avec overlay - seulement si photo existe */}
                     {item.photo && (
                         <div className="relative mb-6 mt-2">
                             <img
                                 src={getImageUrl(item)}
                                 alt={item.name}
-                                className="w-full h-48 object-cover rounded-2xl shadow-2xl"
+                                className="w-full h-48 object-cover rounded-2xl theme-shadow"
                             />
 
                             {/* Gradient overlay */}
@@ -126,13 +126,13 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             {/* Badges overlay */}
                             <div className="absolute top-3 left-3 flex gap-2">
                                 {item.isPopular && (
-                                    <div className="bg-blue-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <div className="theme-badge-popular px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                                         <Flame size={10} />
                                         POPULAIRE
                                     </div>
                                 )}
                                 {item.isSpecial && (
-                                    <div className="bg-purple-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <div className="theme-badge-special px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                                         <Star size={10} />
                                         SPÉCIAL
                                     </div>
@@ -140,8 +140,8 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             </div>
 
                             {/* Prix en overlay */}
-                            <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-sm rounded-full px-3 py-1.5">
-                                <span className="text-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                            <div className="absolute bottom-3 right-3 theme-card-bg backdrop-blur-sm rounded-full px-3 py-1.5">
+                                <span className="text-xl font-bold theme-gradient-text">
                                     {item.price}DH
                                 </span>
                             </div>
@@ -151,13 +151,13 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     {/* Item info */}
                     <div className="mb-6">
                         <div className="flex items-start justify-between mb-3">
-                            <h3 className="text-2xl font-bold text-white flex-1">
+                            <h3 className="text-2xl font-bold theme-foreground-text flex-1">
                                 {item.name} {item.emoji}
                             </h3>
                             {/* Prix affiché ici si pas d'image */}
                             {!item.photo && (
-                                <div className="bg-gray-800/50 backdrop-blur-sm rounded-full px-3 py-1.5 ml-3">
-                                    <span className="text-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                                <div className="theme-card-bg backdrop-blur-sm rounded-full px-3 py-1.5 ml-3">
+                                    <span className="text-xl font-bold theme-gradient-text">
                                         {item.price}DH
                                     </span>
                                 </div>
@@ -168,13 +168,13 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                         {!item.photo && (
                             <div className="flex gap-2 mb-3">
                                 {item.isPopular && (
-                                    <div className="bg-blue-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <div className="theme-badge-popular px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                                         <Flame size={10} />
                                         POPULAIRE
                                     </div>
                                 )}
                                 {item.isSpecial && (
-                                    <div className="bg-purple-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <div className="theme-badge-special px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                                         <Star size={10} />
                                         SPÉCIAL
                                     </div>
@@ -182,29 +182,30 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             </div>
                         )}
 
-                        <p className="text-gray-300 leading-relaxed text-sm">
+                        <p className="theme-secondary-text leading-relaxed text-sm">
                             {item.description}
                         </p>
                     </div>
+
                     {/* Quantity selector */}
                     <div className="mb-6">
-                        <h4 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h4 className="text-lg font-bold theme-foreground-text mb-3 flex items-center gap-2">
                             📦 Quantité
                         </h4>
-                        <div className="flex items-center justify-center gap-4 bg-gray-800/50 backdrop-blur-sm rounded-xl py-4 border border-gray-700/50">
+                        <div className="flex items-center justify-center gap-4 theme-card-bg backdrop-blur-sm rounded-xl py-4 theme-border border">
                             <button
                                 onClick={() => handleQuantityChange(quantity - 1)}
                                 disabled={quantity <= 1}
-                                className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-600 hover:border-gray-500"
+                                className="w-10 h-10 rounded-full theme-button-secondary flex items-center justify-center hover:theme-button-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed theme-border border"
                             >
-                                <Minus size={18} className="text-white" />
+                                <Minus size={18} className="theme-foreground-text" />
                             </button>
 
                             <div className="text-center min-w-[4rem]">
-                                <span className="text-3xl font-bold text-white block">
+                                <span className="text-3xl font-bold theme-foreground-text block">
                                     {quantity}
                                 </span>
-                                <span className="text-xs text-gray-400">
+                                <span className="text-xs theme-secondary-text">
                                     {quantity > 1 ? 'articles' : 'article'}
                                 </span>
                             </div>
@@ -212,50 +213,50 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             <button
                                 onClick={() => handleQuantityChange(quantity + 1)}
                                 disabled={quantity >= 99}
-                                className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors border border-gray-600 hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-10 h-10 rounded-full theme-button-secondary flex items-center justify-center hover:theme-button-secondary transition-colors theme-border border disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Plus size={18} className="text-white" />
+                                <Plus size={18} className="theme-foreground-text" />
                             </button>
                         </div>
                     </div>
 
                     {/* Instructions spéciales */}
                     <div className="mb-6">
-                        <h4 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                        <h4 className="text-lg font-bold theme-foreground-text mb-3 flex items-center gap-2">
                             📝 Instructions spéciales
-                            <span className="text-sm font-normal text-gray-400">(optionnel)</span>
+                            <span className="text-sm font-normal theme-secondary-text">(optionnel)</span>
                         </h4>
                         <div className="relative">
                             <textarea
                                 value={instructions}
                                 onChange={(e) => setInstructions(e.target.value)}
                                 placeholder="Ex: Sans oignons, bien cuit, sauce à part, allergie aux fruits de mer..."
-                                className="w-full bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 text-white placeholder-gray-400 resize-none focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-300 min-h-[80px]"
+                                className="w-full theme-input resize-none focus:theme-primary-focus transition-all duration-300 min-h-[80px]"
                                 rows={3}
                                 maxLength={200}
                             />
-                            <div className="absolute bottom-3 right-3 text-xs text-gray-500 bg-gray-900/80 px-2 py-1 rounded">
+                            <div className="absolute bottom-3 right-3 text-xs theme-secondary-text theme-card-bg px-2 py-1 rounded">
                                 {instructions.length}/200
                             </div>
                         </div>
                         {instructions.length > 0 && (
-                            <p className="text-xs text-blue-400 mt-2 flex items-center gap-1">
+                            <p className="text-xs theme-accent-text mt-2 flex items-center gap-1">
                                 ✓ Vos instructions seront transmises au chef
                             </p>
                         )}
                     </div>
 
                     {/* Note de service */}
-                    <p className="text-center text-xs text-gray-500 mb-4 flex items-center justify-center gap-1">
+                    <p className="text-center text-xs theme-secondary-text mb-4 flex items-center justify-center gap-1">
                         <span>⏱️</span>
                         Les instructions spéciales peuvent affecter le temps de préparation
                     </p>
 
-                    {/* Bouton d'ajout au panier - maintenant dans la zone scrollable */}
+                    {/* Bouton d'ajout au panier */}
                     <button
                         onClick={handleAddToCart}
                         disabled={isProcessing}
-                        className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black py-3.5 rounded-xl font-bold text-lg hover:from-yellow-400 hover:to-orange-400 transition-all duration-300 flex items-center justify-center gap-3 shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                        className="w-full theme-button-primary py-3.5 rounded-xl font-bold text-lg transition-all duration-300 flex items-center justify-center gap-3 theme-shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mb-4"
                     >
                         {isProcessing ? (
                             <>
@@ -273,8 +274,6 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     </button>
                 </div>
             </div>
-
-
         </div>
     );
 };

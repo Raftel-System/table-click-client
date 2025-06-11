@@ -1,4 +1,4 @@
-// src/pages/CartPage.tsx
+// src/pages/CartPage.tsx - Version avec thème dynamique
 import React, { useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../hooks/useTheme';
 
 const CartPage: React.FC = () => {
     const { restaurantSlug } = useParams<{ restaurantSlug: string }>();
@@ -33,6 +34,9 @@ const CartPage: React.FC = () => {
         getCartSummary,
         validateCart
     } = useCart();
+
+    // Hook pour le thème dynamique
+    const { theme, loading: themeLoading, isLightTheme } = useTheme(restaurantSlug || '');
 
     // États locaux
     const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
@@ -52,7 +56,7 @@ const CartPage: React.FC = () => {
         navigate(basePath + path);
     };
 
-    // Gestion des actions (reste identique)
+    // Gestion des actions (reste identique mais avec les nouvelles classes CSS)
     const handleRemoveItem = useCallback(async (cartItemId: string) => {
         setProcessingItems(prev => new Set(prev).add(cartItemId));
         try {
@@ -161,49 +165,62 @@ const CartPage: React.FC = () => {
         ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())
         : 'Restaurant';
 
-    // Rendu panier vide
+    // Loading avec thème
+    if (themeLoading) {
+        return (
+            <div className="min-h-screen theme-bg-gradient theme-foreground-text flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-current mx-auto mb-6 theme-primary-text"></div>
+                    <h2 className="text-2xl font-bold mb-2">Chargement du panier</h2>
+                    <p className="theme-secondary-text">Application du thème...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Rendu panier vide avec thème dynamique
     if (cartItems.length === 0 && !showCheckout) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white">
-                <header className="sticky top-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800">
+            <div className="min-h-screen theme-bg-gradient theme-foreground-text">
+                <header className="sticky top-0 z-50 theme-header-bg theme-border border-b">
                     <div className="flex items-center justify-between px-4 py-3">
-                        <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-3 py-1 rounded-full">
+                        <div className="flex items-center gap-2 theme-button-primary px-3 py-1 rounded-full">
                             <span className="font-bold text-lg">O2</span>
                         </div>
                         <div className="text-center">
                             <h1 className="text-xl font-bold">Panier</h1>
-                            <p className="text-xs text-gray-400">{restaurantName}</p>
+                            <p className="text-xs theme-secondary-text">{restaurantName}</p>
                         </div>
                         <div className="w-16"></div>
                     </div>
                 </header>
 
                 <div className="flex flex-col items-center justify-center h-[70vh] px-6">
-                    <div className="bg-gray-800/30 rounded-full p-8 mb-6">
-                        <ShoppingCart size={80} className="text-gray-500" />
+                    <div className="theme-card-bg rounded-full p-8 mb-6 backdrop-blur-sm">
+                        <ShoppingCart size={80} className="theme-secondary-text" />
                     </div>
-                    <h2 className="text-3xl font-bold mb-3 text-center">Votre panier est vide</h2>
-                    <p className="text-gray-400 text-center mb-8 max-w-md leading-relaxed">
+                    <h2 className="text-3xl font-bold mb-3 text-center theme-foreground-text">Votre panier est vide</h2>
+                    <p className="theme-secondary-text text-center mb-8 max-w-md leading-relaxed">
                         Découvrez nos délicieux plats et ajoutez vos favoris au panier pour commencer votre commande
                     </p>
                     <button
                         onClick={() => navigateWithSlug('/menu')}
-                        className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-8 py-4 rounded-full font-bold text-lg hover:from-yellow-400 hover:to-orange-400 transition-all transform hover:scale-105 shadow-lg"
+                        className="theme-button-primary px-8 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-105 theme-shadow-lg"
                     >
                         🍽️ Découvrir le menu
                     </button>
                 </div>
 
-                <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-md border-t border-gray-800 z-50">
+                <div className="fixed bottom-0 left-0 right-0 theme-header-bg theme-border border-t z-50">
                     <div className="flex">
                         <button
                             onClick={() => navigateWithSlug('/menu')}
-                            className="flex-1 flex flex-col items-center gap-1 py-4 text-gray-400 hover:text-yellow-500 transition-colors"
+                            className="flex-1 flex flex-col items-center gap-1 py-4 theme-nav-item hover:theme-primary-text transition-colors"
                         >
                             <Home size={24} />
                             <span className="text-xs">Menu</span>
                         </button>
-                        <button className="flex-1 flex flex-col items-center gap-1 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-black">
+                        <button className="flex-1 flex flex-col items-center gap-1 py-4 theme-nav-item active">
                             <ShoppingCart size={24} />
                             <span className="text-xs font-bold">Panier (0)</span>
                         </button>
@@ -214,84 +231,90 @@ const CartPage: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white">
-            {/* Header */}
-            <header className="sticky top-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl">
+        <div className="min-h-screen theme-bg-gradient theme-foreground-text">
+            {/* Header avec thème dynamique */}
+            <header className="sticky top-0 z-50 theme-header-bg theme-border border-b theme-shadow">
                 <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-3 py-1 rounded-full">
+                    <div className="flex items-center gap-2 theme-button-primary px-3 py-1 rounded-full">
                         <span className="font-bold text-lg">O2</span>
                     </div>
                     <div className="text-center">
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                        <h1 className="text-xl font-bold theme-gradient-text">
                             Mon Panier
                         </h1>
-                        <p className="text-xs text-gray-400">{restaurantName}</p>
+                        <p className="text-xs theme-secondary-text">{restaurantName}</p>
+                        {/* Indicateur de thème en dev */}
+                        {process.env.NODE_ENV === 'development' && theme && (
+                            <p className="text-xs theme-accent-text">
+                                🎨 {theme.id} ({isLightTheme ? 'clair' : 'sombre'})
+                            </p>
+                        )}
                     </div>
                     <div className="w-16"></div>
                 </div>
             </header>
 
-            {/* Contenu principal */}
+            {/* Contenu principal avec thème */}
             <div className="px-4 py-6 pb-32 max-w-4xl mx-auto">
-                {/* Type de commande */}
+                {/* Type de commande avec cartes thématiques */}
                 <div className="mb-8">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <h3 className="text-xl font-bold theme-foreground-text mb-4 flex items-center gap-2">
                         🚀 Type de commande
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                         <button
                             onClick={() => setOrderType('delivery')}
-                            className={`p-6 rounded-2xl border-2 transition-all duration-300 ${
+                            className={`p-6 rounded-2xl border-2 transition-all duration-300 theme-card-bg backdrop-blur-sm ${
                                 orderType === 'delivery'
-                                    ? 'border-yellow-500 bg-yellow-500/10 shadow-lg shadow-yellow-500/20'
-                                    : 'border-gray-600 bg-gray-800/30 hover:border-gray-500'
+                                    ? 'theme-border border-opacity-100 theme-shadow-lg scale-105'
+                                    : 'theme-border border-opacity-50 hover:border-opacity-75'
                             }`}
                         >
                             <div className="text-3xl mb-3">🛵</div>
-                            <div className="font-bold text-lg">Livraison</div>
-                            <div className="text-sm text-gray-400 mt-1">30-45 min • +{cartSummary.deliveryFee} DH</div>
+                            <div className="font-bold text-lg theme-foreground-text">Livraison</div>
+                            <div className="text-sm theme-secondary-text mt-1">30-45 min • +{cartSummary.deliveryFee} DH</div>
                         </button>
                         <button
                             onClick={() => setOrderType('pickup')}
-                            className={`p-6 rounded-2xl border-2 transition-all duration-300 ${
+                            className={`p-6 rounded-2xl border-2 transition-all duration-300 theme-card-bg backdrop-blur-sm ${
                                 orderType === 'pickup'
-                                    ? 'border-yellow-500 bg-yellow-500/10 shadow-lg shadow-yellow-500/20'
-                                    : 'border-gray-600 bg-gray-800/30 hover:border-gray-500'
+                                    ? 'theme-border border-opacity-100 theme-shadow-lg scale-105'
+                                    : 'theme-border border-opacity-50 hover:border-opacity-75'
                             }`}
                         >
                             <div className="text-3xl mb-3">🏃</div>
-                            <div className="font-bold text-lg">À emporter</div>
-                            <div className="text-sm text-gray-400 mt-1">15-20 min • Gratuit</div>
+                            <div className="font-bold text-lg theme-foreground-text">À emporter</div>
+                            <div className="text-sm theme-secondary-text mt-1">15-20 min • Gratuit</div>
                         </button>
                     </div>
                 </div>
 
-                {/* Articles du panier */}
+                {/* Articles du panier avec cartes thématiques */}
                 <div className="mb-8">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <h3 className="text-xl font-bold theme-foreground-text mb-4 flex items-center gap-2">
                         🛒 Vos articles ({cartSummary.itemsCount})
                     </h3>
                     <div className="space-y-4">
                         {cartItems.map((item) => (
-                            <div key={item.cartItemId} className="bg-gray-900/40 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 hover:border-gray-600/50 transition-all">
+                            <div key={item.cartItemId} className="theme-card-bg backdrop-blur-sm rounded-2xl p-6 theme-border theme-shadow hover:theme-shadow-lg transition-all">
                                 {/* En-tête de l'article */}
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <h4 className="font-bold text-lg text-white">{item.name} {item.emoji}</h4>
+                                            <h4 className="font-bold text-lg theme-foreground-text">{item.name} {item.emoji}</h4>
                                         </div>
-                                        <p className="text-gray-400 text-sm">{item.description}</p>
-                                        <p className="text-xs text-gray-500 mt-1">
+                                        <p className="theme-secondary-text text-sm">{item.description}</p>
+                                        <p className="text-xs theme-secondary-text mt-1">
                                             Ajouté il y a {Math.round((Date.now() - item.addedAt) / 60000)} min
                                         </p>
                                     </div>
 
-                                    {/* Actions rapides */}
+                                    {/* Actions rapides avec thème */}
                                     <div className="flex items-center gap-2 ml-4">
                                         <button
                                             onClick={() => handleDuplicateItem(item.cartItemId)}
                                             disabled={processingItems.has(item.cartItemId)}
-                                            className="text-blue-400 hover:text-blue-300 transition-colors p-2 rounded-lg hover:bg-blue-400/10"
+                                            className="theme-accent-text hover:opacity-80 transition-colors p-2 rounded-lg theme-card-bg backdrop-blur-sm"
                                             title="Dupliquer l'article"
                                         >
                                             {processingItems.has(item.cartItemId) ? (
@@ -303,7 +326,7 @@ const CartPage: React.FC = () => {
                                         <button
                                             onClick={() => handleRemoveItem(item.cartItemId)}
                                             disabled={processingItems.has(item.cartItemId)}
-                                            className="text-red-500 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-red-500/10"
+                                            className="theme-alert-text hover:opacity-80 transition-colors p-2 rounded-lg theme-card-bg backdrop-blur-sm"
                                             title="Supprimer l'article"
                                         >
                                             {processingItems.has(item.cartItemId) ? (
@@ -315,25 +338,25 @@ const CartPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Instructions spéciales */}
+                                {/* Instructions spéciales avec thème */}
                                 {editingInstructions === item.cartItemId ? (
-                                    <div className="mb-4 p-4 bg-gray-800/50 rounded-xl border border-gray-600">
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Instructions spéciales</label>
+                                    <div className="mb-4 p-4 theme-card-bg rounded-xl theme-border">
+                                        <label className="block text-sm font-medium theme-foreground-text mb-2">Instructions spéciales</label>
                                         <textarea
                                             value={tempInstructions}
                                             onChange={(e) => setTempInstructions(e.target.value)}
                                             placeholder="Ex: Sans oignons, bien cuit, sauce à part..."
-                                            className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 resize-none"
+                                            className="w-full theme-input resize-none focus:theme-primary-focus transition-all"
                                             rows={3}
                                             maxLength={200}
                                         />
                                         <div className="flex justify-between items-center mt-2">
-                                            <span className="text-xs text-gray-500">{tempInstructions.length}/200</span>
+                                            <span className="text-xs theme-secondary-text">{tempInstructions.length}/200</span>
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={handleSaveInstructions}
                                                     disabled={processingItems.has(item.cartItemId)}
-                                                    className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-500 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                                    className="theme-success-text px-3 py-1 rounded-lg text-sm hover:opacity-80 transition-colors theme-card-bg flex items-center gap-1"
                                                 >
                                                     {processingItems.has(item.cartItemId) ? (
                                                         <Loader2 size={14} className="animate-spin" />
@@ -344,7 +367,7 @@ const CartPage: React.FC = () => {
                                                 </button>
                                                 <button
                                                     onClick={handleCancelEdit}
-                                                    className="bg-gray-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-gray-500 transition-colors"
+                                                    className="theme-secondary-text px-3 py-1 rounded-lg text-sm hover:opacity-80 transition-colors theme-card-bg"
                                                 >
                                                     Annuler
                                                 </button>
@@ -352,18 +375,18 @@ const CartPage: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : item.instructions ? (
-                                    <div className="mb-4 p-4 bg-blue-900/20 border border-blue-700/30 rounded-xl">
+                                    <div className="mb-4 p-4 theme-accent-gradient-text bg-opacity-10 theme-border rounded-xl">
                                         <div className="flex items-start justify-between">
                                             <div>
-                                                <p className="text-xs text-blue-400 font-medium mb-1 flex items-center gap-1">
+                                                <p className="text-xs theme-accent-text font-medium mb-1 flex items-center gap-1">
                                                     <MessageSquare size={12} />
                                                     Instructions spéciales:
                                                 </p>
-                                                <p className="text-sm text-blue-200">{item.instructions}</p>
+                                                <p className="text-sm theme-foreground-text">{item.instructions}</p>
                                             </div>
                                             <button
                                                 onClick={() => handleEditInstructions(item.cartItemId, item.instructions)}
-                                                className="text-blue-400 hover:text-blue-300 transition-colors p-1"
+                                                className="theme-accent-text hover:opacity-80 transition-colors p-1"
                                                 title="Modifier les instructions"
                                             >
                                                 <Edit3 size={14} />
@@ -374,7 +397,7 @@ const CartPage: React.FC = () => {
                                     <div className="mb-4">
                                         <button
                                             onClick={() => handleEditInstructions(item.cartItemId, '')}
-                                            className="text-gray-400 hover:text-yellow-500 transition-colors text-sm flex items-center gap-2 p-2 rounded-lg hover:bg-gray-800/50"
+                                            className="theme-secondary-text hover:theme-primary-text transition-colors text-sm flex items-center gap-2 p-2 rounded-lg theme-card-bg hover:opacity-80"
                                         >
                                             <Edit3 size={14} />
                                             Ajouter des instructions spéciales
@@ -382,13 +405,13 @@ const CartPage: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Contrôles quantité et prix */}
+                                {/* Contrôles quantité et prix avec thème */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-4">
                                         <button
                                             onClick={() => handleQuantityChange(item.cartItemId, item.quantity - 1)}
                                             disabled={processingItems.has(item.cartItemId)}
-                                            className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors disabled:opacity-50 border border-gray-600"
+                                            className="w-10 h-10 rounded-full theme-button-secondary flex items-center justify-center hover:opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed theme-border"
                                         >
                                             {processingItems.has(item.cartItemId) ? (
                                                 <Loader2 size={16} className="animate-spin" />
@@ -398,14 +421,14 @@ const CartPage: React.FC = () => {
                                         </button>
 
                                         <div className="text-center min-w-[3rem]">
-                                            <span className="font-bold text-xl text-white">{item.quantity}</span>
-                                            <p className="text-xs text-gray-400">article{item.quantity > 1 ? 's' : ''}</p>
+                                            <span className="font-bold text-xl theme-foreground-text">{item.quantity}</span>
+                                            <p className="text-xs theme-secondary-text">article{item.quantity > 1 ? 's' : ''}</p>
                                         </div>
 
                                         <button
                                             onClick={() => handleQuantityChange(item.cartItemId, item.quantity + 1)}
                                             disabled={processingItems.has(item.cartItemId)}
-                                            className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors disabled:opacity-50 border border-gray-600"
+                                            className="w-10 h-10 rounded-full theme-button-secondary flex items-center justify-center hover:opacity-80 transition-all theme-border disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {processingItems.has(item.cartItemId) ? (
                                                 <Loader2 size={16} className="animate-spin" />
@@ -416,8 +439,8 @@ const CartPage: React.FC = () => {
                                     </div>
 
                                     <div className="text-right">
-                                        <p className="text-sm text-gray-400">{item.price} DH × {item.quantity}</p>
-                                        <p className="font-bold text-xl text-yellow-500">
+                                        <p className="text-sm theme-secondary-text">{item.price} DH × {item.quantity}</p>
+                                        <p className="font-bold text-xl theme-gradient-text">
                                             {(item.price * item.quantity).toFixed(2)} DH
                                         </p>
                                     </div>
@@ -427,69 +450,69 @@ const CartPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Note pour la commande */}
+                {/* Note pour la commande avec thème */}
                 <div className="mb-8">
-                    <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <h3 className="text-lg font-bold theme-foreground-text mb-3 flex items-center gap-2">
                         📝 Note pour le restaurant (optionnel)
                     </h3>
-                    <div className="bg-gray-900/40 backdrop-blur-sm rounded-2xl p-4 border border-gray-700/50">
+                    <div className="theme-card-bg backdrop-blur-sm rounded-2xl p-4 theme-border">
                         <textarea
                             value={orderNote}
                             onChange={(e) => setOrderNote(e.target.value)}
-                            className="w-full bg-gray-800/50 border border-gray-600 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 resize-none transition-all"
+                            className="w-full theme-input resize-none focus:theme-primary-focus transition-all min-h-[80px]"
                             rows={3}
                             placeholder="Ex: Commande pour une fête, livraison discrète, allergies particulières..."
                             maxLength={300}
                         />
-                        <div className="text-right text-xs text-gray-500 mt-2">
+                        <div className="text-right text-xs theme-secondary-text mt-2">
                             {orderNote.length}/300
                         </div>
                     </div>
                 </div>
 
-                {/* Résumé de la commande */}
-                <div className="bg-gray-900/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 mb-8">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                {/* Résumé de la commande avec thème */}
+                <div className="theme-card-bg backdrop-blur-sm rounded-2xl p-6 theme-border mb-8 theme-shadow">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 theme-foreground-text">
                         📊 Résumé de la commande
                     </h3>
 
                     <div className="space-y-4">
-                        <div className="flex justify-between items-center text-gray-300">
+                        <div className="flex justify-between items-center theme-secondary-text">
                             <span>Sous-total ({cartSummary.itemsCount} articles)</span>
                             <span className="font-medium">{cartSummary.subtotal.toFixed(2)} DH</span>
                         </div>
 
-                        <div className="flex justify-between items-center text-gray-300">
+                        <div className="flex justify-between items-center theme-secondary-text">
                             <span>Frais de service (5%)</span>
                             <span className="font-medium">{cartSummary.serviceFee.toFixed(2)} DH</span>
                         </div>
 
                         {orderType === 'delivery' && (
-                            <div className="flex justify-between items-center text-gray-300">
+                            <div className="flex justify-between items-center theme-secondary-text">
                                 <span>Frais de livraison</span>
                                 <span className="font-medium">{cartSummary.deliveryFee.toFixed(2)} DH</span>
                             </div>
                         )}
 
-                        <div className="h-px bg-gray-700 my-4"></div>
+                        <div className="h-px theme-border my-4"></div>
 
                         <div className="flex justify-between items-center">
-                            <span className="text-xl font-bold text-white">Total</span>
-                            <span className="text-3xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                            <span className="text-xl font-bold theme-foreground-text">Total</span>
+                            <span className="text-3xl font-bold theme-gradient-text">
                                 {cartSummary.total.toFixed(2)} DH
                             </span>
                         </div>
                     </div>
 
-                    {/* Temps estimé */}
-                    <div className="bg-gray-800/50 rounded-xl p-4 mt-6">
+                    {/* Temps estimé avec thème */}
+                    <div className="theme-card-bg rounded-xl p-4 mt-6 theme-border">
                         <div className="flex items-center gap-3">
-                            <Clock size={20} className="text-yellow-500" />
+                            <Clock size={20} className="theme-primary-text" />
                             <div>
-                                <p className="font-medium text-white">
+                                <p className="font-medium theme-foreground-text">
                                     Temps {orderType === 'delivery' ? 'de livraison' : 'de préparation'} estimé
                                 </p>
-                                <p className="text-sm text-gray-400">
+                                <p className="text-sm theme-secondary-text">
                                     {orderType === 'delivery' ? '30-45 minutes' : '15-20 minutes'}
                                 </p>
                             </div>
@@ -498,14 +521,14 @@ const CartPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Bouton de commande fixe */}
-            <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-md border-t border-gray-800 p-4 z-50">
+            {/* Bouton de commande fixe avec thème */}
+            <div className="fixed bottom-0 left-0 right-0 theme-header-bg theme-border border-t p-4 z-50">
                 <div className="max-w-4xl mx-auto">
                     <div className="flex gap-3">
                         {/* Bouton retour menu */}
                         <button
                             onClick={() => navigateWithSlug('/menu')}
-                            className="flex items-center justify-center gap-2 bg-gray-700 text-white px-4 py-3 rounded-xl hover:bg-gray-600 transition-colors"
+                            className="flex items-center justify-center gap-2 theme-button-secondary px-4 py-3 rounded-xl hover:opacity-80 transition-colors"
                         >
                             <Home size={18} />
                             <span className="hidden sm:inline text-sm">Menu</span>
@@ -515,7 +538,7 @@ const CartPage: React.FC = () => {
                         <button
                             onClick={handleCheckout}
                             disabled={showCheckout || !cartValidation.isValid || isLoading}
-                            className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black py-3 px-6 rounded-xl font-bold text-lg hover:from-yellow-400 hover:to-orange-400 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                            className="flex-1 theme-button-primary py-3 px-6 rounded-xl font-bold text-lg hover:opacity-90 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed theme-shadow-lg"
                         >
                             {showCheckout ? (
                                 <>
@@ -534,7 +557,7 @@ const CartPage: React.FC = () => {
                     {/* Erreurs de validation */}
                     {!cartValidation.isValid && (
                         <div className="mt-2 p-2 bg-red-900/20 border border-red-700/30 rounded-lg">
-                            <div className="flex items-center gap-2 text-red-400 text-sm">
+                            <div className="flex items-center gap-2 theme-alert-text text-sm">
                                 <AlertCircle size={16} />
                                 {cartValidation.errors.join(', ')}
                             </div>
@@ -543,33 +566,33 @@ const CartPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Overlay de traitement de commande */}
+            {/* Overlay de traitement de commande avec thème */}
             {showCheckout && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-gray-900 rounded-2xl p-8 text-center border border-gray-700 max-w-md w-full">
-                        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-500 mx-auto mb-6"></div>
-                        <h3 className="text-2xl font-bold mb-3">Traitement de votre commande</h3>
-                        <p className="text-gray-400 mb-6">Veuillez patienter pendant que nous préparons votre commande...</p>
+                <div className="fixed inset-0 theme-backdrop backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="theme-modal-bg rounded-2xl p-8 text-center theme-border max-w-md w-full theme-shadow-lg">
+                        <div className="animate-spin rounded-full h-16 w-16 border-b-4 theme-primary-text mx-auto mb-6"></div>
+                        <h3 className="text-2xl font-bold mb-3 theme-foreground-text">Traitement de votre commande</h3>
+                        <p className="theme-secondary-text mb-6">Veuillez patienter pendant que nous préparons votre commande...</p>
 
-                        {/* Détails de la commande */}
-                        <div className="bg-gray-800/50 rounded-xl p-4 text-left space-y-2">
+                        {/* Détails de la commande avec thème */}
+                        <div className="theme-card-bg rounded-xl p-4 text-left space-y-2 backdrop-blur-sm">
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-400">Articles:</span>
-                                <span className="text-white font-medium">{cartSummary.itemsCount}</span>
+                                <span className="theme-secondary-text">Articles:</span>
+                                <span className="theme-foreground-text font-medium">{cartSummary.itemsCount}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-400">Total:</span>
-                                <span className="text-yellow-500 font-bold">{cartSummary.total.toFixed(2)} DH</span>
+                                <span className="theme-secondary-text">Total:</span>
+                                <span className="theme-primary-text font-bold">{cartSummary.total.toFixed(2)} DH</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-400">Type:</span>
-                                <span className="text-white font-medium">
+                                <span className="theme-secondary-text">Type:</span>
+                                <span className="theme-foreground-text font-medium">
                                     {orderType === 'delivery' ? '🛵 Livraison' : '🏃 À emporter'}
                                 </span>
                             </div>
                         </div>
 
-                        <div className="mt-6 text-xs text-gray-500">
+                        <div className="mt-6 text-xs theme-secondary-text">
                             ⏱️ Cette opération peut prendre quelques secondes
                         </div>
                     </div>

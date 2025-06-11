@@ -47,13 +47,13 @@ const MenuItems: React.FC<MenuItemsProps> = ({ items, onItemClick }) => {
                     {/* Badges */}
                     <div className="flex gap-2 mb-3">
                         {item.isPopular && (
-                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                            <div className="theme-badge-popular px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 theme-shadow-lg">
                                 <Flame size={12} />
                                 POPULAIRE
                             </div>
                         )}
                         {item.isSpecial && (
-                            <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                            <div className="theme-badge-special px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 theme-shadow-lg">
                                 <Star size={12} />
                                 SPÉCIAL
                             </div>
@@ -61,27 +61,27 @@ const MenuItems: React.FC<MenuItemsProps> = ({ items, onItemClick }) => {
                     </div>
 
                     {/* Item Card */}
-                    <div className="flex gap-4 bg-gray-900/40 backdrop-blur-sm rounded-2xl p-5 border border-gray-800/30 hover:border-yellow-500/40 transition-all duration-300 hover:bg-gray-900/60 hover:shadow-2xl hover:shadow-yellow-500/10">
+                    <div className="flex gap-4 theme-menu-card rounded-2xl p-5 transition-all duration-300 group">
                         <div className="flex-1">
                             <h3
-                                className="text-xl font-bold text-white mb-2 cursor-pointer hover:text-yellow-400 transition-colors duration-300 group-hover:text-yellow-400"
+                                className="text-xl font-bold theme-foreground-text mb-2 cursor-pointer hover:theme-primary-text transition-colors duration-300"
                                 onClick={() => onItemClick(item)}
                             >
                                 {item.name} {item.emoji}
                             </h3>
-                            <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-2">
+                            <p className="theme-secondary-text text-sm mb-4 leading-relaxed line-clamp-2">
                                 {item.description}
                             </p>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-2xl font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                                    <span className="text-2xl font-bold theme-gradient-text">
                                         {item.price}
                                     </span>
-                                    <span className="text-sm text-gray-400 font-medium">DH</span>
+                                    <span className="text-sm theme-secondary-text font-medium">DH</span>
                                 </div>
                                 <button
                                     onClick={() => onItemClick(item)}
-                                    className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-6 py-2.5 rounded-full font-bold flex items-center gap-2 hover:from-yellow-400 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                                    className="theme-button-primary px-6 py-2.5 rounded-full font-bold flex items-center gap-2 transition-all duration-300 transform hover:scale-105 theme-shadow-lg"
                                 >
                                     <Plus size={18} />
                                     <span className="hidden sm:inline">Ajouter</span>
@@ -90,7 +90,7 @@ const MenuItems: React.FC<MenuItemsProps> = ({ items, onItemClick }) => {
                         </div>
 
                         <div
-                            className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 cursor-pointer shadow-lg group-hover:shadow-xl transition-all duration-300"
+                            className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 cursor-pointer theme-shadow-lg hover:theme-shadow transition-all duration-300"
                             onClick={() => onItemClick(item)}
                         >
                             <img
@@ -103,7 +103,6 @@ const MenuItems: React.FC<MenuItemsProps> = ({ items, onItemClick }) => {
                     </div>
                 </div>
             ))}
-
         </div>
     );
 };

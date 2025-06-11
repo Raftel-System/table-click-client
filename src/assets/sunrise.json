@@ -1,0 +1,37 @@
+{
+  "id": "sunrise",
+  "nom": "Sunrise – Jaune & Cyan",
+  "description": "Thème chaleureux basé sur un dégradé jaune-orange avec accents cyan",
+  "type": "dark",
+  "colors": {
+    "primary": {
+      "from": "#f59e0b",
+      "to": "#eab308"
+    },
+    "accent": {
+      "from": "#06b6d4",
+      "to": "#0891b2"
+    },
+    "background": {
+      "gradient": {
+        "from": "#0f172a",
+        "via": "#111827",
+        "to": "#000000"
+      },
+      "base": "#000000"
+    },
+    "foreground": "#fefefe",
+    "textSecondary": "#9ca3af",
+    "alert": "#ef4444",
+    "success": "#16a34a",
+    "cardBackground": "rgba(31, 41, 55, 0.4)",
+    "cardBorder": "rgba(75, 85, 99, 0.5)",
+    "buttonText": "#000000"
+  },
+  "gradients": {
+    "action": "bg-gradient-to-r from-yellow-500 to-orange-500",
+    "background": "bg-gradient-to-br from-slate-900 via-gray-900 to-black"
+  },
+  "createdAt": "2025-06-11T12:00:00Z",
+  "isDefault": true
+}

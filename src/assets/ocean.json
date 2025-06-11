@@ -1,0 +1,37 @@
+{
+  "id": "ocean",
+  "nom": "Ocean – Bleu océan moderne",
+  "description": "Thème océanique avec cartes blanches et dégradés bleus rafraîchissants",
+  "type": "light",
+  "colors": {
+    "primary": {
+      "from": "#0ea5e9",
+      "to": "#0284c7"
+    },
+    "accent": {
+      "from": "#06b6d4",
+      "to": "#0891b2"
+    },
+    "background": {
+      "gradient": {
+        "from": "#f0f9ff",
+        "via": "#e0f2fe",
+        "to": "#bae6fd"
+      },
+      "base": "#f0f9ff"
+    },
+    "foreground": "#0c4a6e",
+    "textSecondary": "#0369a1",
+    "alert": "#dc2626",
+    "success": "#059669",
+    "cardBackground": "#ffffff",
+    "cardBorder": "#e2e8f0",
+    "buttonText": "#ffffff"
+  },
+  "gradients": {
+    "action": "bg-gradient-to-r from-sky-500 to-sky-600",
+    "background": "bg-gradient-to-br from-sky-50 via-sky-100 to-sky-200"
+  },
+  "createdAt": "2025-06-11T12:00:00Z",
+  "isDefault": false
+}
