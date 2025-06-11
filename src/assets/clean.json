@@ -2,6 +2,7 @@
   "id": "clean",
   "nom": "Clean – Minimaliste moderne",
   "description": "Thème ultra-propre avec fond blanc, cartes blanches et accents colorés",
+  "type": "light",
   "colors": {
     "primary": {
       "from": "#7c3aed",

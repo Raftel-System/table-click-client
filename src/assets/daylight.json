@@ -2,6 +2,7 @@
   "id": "daylight",
   "nom": "Daylight – Thème clair & moderne",
   "description": "Thème clair moderne avec fond blanc pur, cartes blanches et accents bleus vibrants",
+  "type": "light",
   "colors": {
     "primary": {
       "from": "#2563eb",
