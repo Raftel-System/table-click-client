@@ -1,15 +1,17 @@
-// src/pages/ServiceSelectionPage.tsx - Version simplifiée
+// src/pages/ServiceSelectionPage.tsx - Version avec infos restaurant
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Check, AlertCircle } from 'lucide-react';
 import { useOrderType, type OrderConfig } from '../contexts/OrderTypeContext';
+import { useRestaurantInfo } from '../hooks/useRestaurantInfo';
 import { useTheme } from '../hooks/useTheme';
 
 const ServiceSelectionPage: React.FC = () => {
     const { restaurantSlug } = useParams<{ restaurantSlug: string }>();
     const navigate = useNavigate();
     const { setOrderConfig, orderConfig } = useOrderType();
-    const { theme, loading: themeLoading } = useTheme(restaurantSlug || '');
+    const { restaurantInfo, loading: infoLoading } = useRestaurantInfo(restaurantSlug || '');
+    const { loading: themeLoading } = useTheme(restaurantSlug || '');
 
     // États locaux
     const [selectedType, setSelectedType] = useState<'dine-in' | 'takeaway' | null>(
@@ -20,9 +22,9 @@ const ServiceSelectionPage: React.FC = () => {
     );
     const [errors, setErrors] = useState<string[]>([]);
 
-    const restaurantName = restaurantSlug
-        ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())
-        : 'Restaurant';
+    // Informations du restaurant
+    const restaurantName = restaurantInfo?.nom ||
+        (restaurantSlug ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Restaurant');
 
     const validateAndSubmit = () => {
         const newErrors: string[] = [];
@@ -64,13 +66,16 @@ const ServiceSelectionPage: React.FC = () => {
     };
 
     // Loading avec thème
-    if (themeLoading) {
+    if (themeLoading || infoLoading) {
         return (
             <div className="min-h-screen theme-bg-gradient theme-foreground-text flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-current mx-auto mb-6 theme-primary-text"></div>
                     <h2 className="text-2xl font-bold mb-2">Chargement</h2>
-                    <p className="theme-secondary-text">Préparation de votre expérience...</p>
+                    <div className="space-y-1 theme-secondary-text">
+                        {themeLoading && <p>• Application du thème...</p>}
+                        {infoLoading && <p>• Récupération des informations...</p>}
+                    </div>
                 </div>
             </div>
         );
@@ -93,10 +98,6 @@ const ServiceSelectionPage: React.FC = () => {
                             Type de service
                         </h1>
                         <p className="text-xs theme-secondary-text">{restaurantName}</p>
-                        {/* Indicateur de thème en dev */}
-                        {process.env.NODE_ENV === 'development' && theme && (
-                            <p className="text-xs theme-accent-text">🎨 {theme.id}</p>
-                        )}
                     </div>
 
                     <div className="w-10"></div>
@@ -111,6 +112,9 @@ const ServiceSelectionPage: React.FC = () => {
                     <h2 className="text-2xl font-bold theme-foreground-text mb-3">
                         Comment souhaitez-vous commander ?
                     </h2>
+                    <p className="theme-secondary-text">
+                        Chez <span className="theme-primary-text font-medium">{restaurantName}</span>
+                    </p>
                 </div>
 
                 {/* Sélection du type de service */}
