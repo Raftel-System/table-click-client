@@ -1,0 +1,34 @@
+{
+  "id": "clean",
+  "nom": "Clean – Minimaliste moderne",
+  "description": "Thème ultra-propre avec fond blanc, cartes blanches et accents colorés",
+  "type": "light",
+  "colors": {
+    "primary": {
+      "from": "#7c3aed",
+      "to": "#6d28d9"
+    },
+    "accent": {
+      "from": "#f59e0b",
+      "to": "#d97706"
+    },
+    "background": {
+      "gradient": {
+        "from": "#ffffff",
+        "via": "#ffffff",
+        "to": "#fafafa"
+      },
+      "base": "#ffffff"
+    },
+    "foreground": "#111827",
+    "textSecondary": "#6b7280",
+    "alert": "#ef4444",
+    "success": "#10b981"
+  },
+  "gradients": {
+    "action": "bg-gradient-to-r from-violet-600 to-violet-700",
+    "background": "bg-gradient-to-br from-white via-white to-gray-50"
+  },
+  "createdAt": "2025-06-11T12:00:00Z",
+  "isDefault": false
+}

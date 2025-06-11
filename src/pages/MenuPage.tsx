@@ -1,265 +1,281 @@
-import React, { useState, useRef } from 'react';
-import { ShoppingCart, Home, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useCart } from '../contexts/CartContext';
-import { realMenuCategories, realMenuItems, type RealMenuItem } from '../data/menuData';
+// src/pages/MenuPage.tsx
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, AlertCircle, RefreshCw } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+
+// Import des composants
+import CategoriesSlider from '../components/menu/CategoriesSlider/CategoriesSlider';
+import ItemDetailModal from '../components/menu/ItemDetailModal/ItemDetailModal';
+import MenuItems from '../components/menu/MenuItems/MenuItems';
+import BottomNavigation from '../components/BottomNavigation';
+
+// Import des hooks
+import { useRestaurantData } from '../hooks/useRestaurantData';
+import { useRestaurantInfo } from '../hooks/useRestaurantInfo';
+import { useTheme } from '../hooks/useTheme';
+import { type MenuItem, useCart } from '../contexts/CartContext';
+import { useOrderType } from '../contexts/OrderTypeContext';
 
 const MenuPage: React.FC = () => {
-    const [selectedCategory, setSelectedCategory] = useState('breakfast');
-    const [showItemDetail, setShowItemDetail] = useState<RealMenuItem | null>(null);
-    const categoriesRef = useRef<HTMLDivElement>(null);
-    const { addToCart, getCartItemsCount } = useCart();
+    const { restaurantSlug } = useParams<{ restaurantSlug: string }>();
     const navigate = useNavigate();
+    const { addToCart, getCartItemsCount } = useCart();
+    const { isOrderConfigured } = useOrderType();
 
-    const filteredItems = realMenuItems.filter(item =>
-        item.category === selectedCategory && (item.isAvailable !== false)
+    // État local
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [showItemDetail, setShowItemDetail] = useState<MenuItem | null>(null);
+
+    // Hooks pour les données, infos et thème
+    const { categories, items, loading: dataLoading, error: dataError, refetch } = useRestaurantData(restaurantSlug || '');
+    const { restaurantInfo, loading: infoLoading, error: infoError } = useRestaurantInfo(restaurantSlug || '');
+    const { theme, loading: themeLoading, error: themeError } = useTheme(restaurantSlug || '');
+
+    // Loading combiné
+    const loading = dataLoading || themeLoading || infoLoading;
+    const error = dataError || themeError || infoError;
+
+    // Vérifier si le service est configuré, sinon rediriger
+    useEffect(() => {
+        if (!loading && !error && !isOrderConfigured) {
+            console.log('⚠️ Service non configuré, redirection vers la sélection');
+            navigate(`/${restaurantSlug}/service`);
+        }
+    }, [loading, error, isOrderConfigured, navigate, restaurantSlug]);
+
+    // Sélectionner automatiquement la première catégorie
+    useEffect(() => {
+        if (categories.length > 0 && !selectedCategory) {
+            setSelectedCategory(categories[0].id);
+        }
+    }, [categories, selectedCategory]);
+
+    // Filtrer les items selon la catégorie sélectionnée
+    const filteredItems = items.filter(item =>
+        item.category === selectedCategory && item.isAvailable !== false
     );
 
-    const handleAddToCart = (item: RealMenuItem) => {
-        addToCart(item);
-
-        // Animation sur le bouton
-        const button = document.getElementById(`add-${item.id}`);
-        if (button) {
-            button.classList.add('scale-110');
-            setTimeout(() => button.classList.remove('scale-110'), 200);
-        }
+    // Gestion de l'ouverture du détail d'un item
+    const handleOpenItemDetail = (item: MenuItem) => {
+        setShowItemDetail(item);
     };
 
-    const getImageUrl = (item: RealMenuItem) => {
-        if (item.photo) {
-            return `/assets/menu/${item.photo}`;
-        }
-        // Images par défaut basées sur la catégorie
-        const imageMap: { [key: string]: string } = {
-            'breakfast': 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400',
-            'starters': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
-            'tajines': 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?w=400',
-            'couscous': 'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=400',
-            'mains': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
-            'pizzas': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
-            'tacos': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
-            'drinks': 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400',
-            'desserts': 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400'
-        };
-        return imageMap[item.category] || imageMap['mains'];
+    // Gestion de la fermeture du détail d'un item
+    const handleCloseItemDetail = () => {
+        setShowItemDetail(null);
     };
 
-    return (
-        <div className="min-h-screen bg-black text-white">
-            {/* Header */}
-            <header className="sticky top-0 z-50 bg-black border-b border-gray-800">
-                <div className="flex items-center justify-between px-4 py-3">
-                    {/* Logo centré à gauche */}
-                    <div className="flex items-center gap-2 bg-yellow-500 text-black px-3 py-1 rounded-full">
-                        <span className="font-bold text-lg">O2</span>
+    // Gestion de l'ajout au panier depuis la modal avec devise
+    const handleAddToCart = async (item: MenuItem, quantity: number, instructions?: string) => {
+        await addToCart(item, quantity, instructions);
+    };
+
+    // Gestion de la navigation
+    const handleNavigate = (path: string) => {
+        const basePath = `/${restaurantSlug}`;
+        navigate(basePath + path.replace('/menu', '/menu').replace('/cart', '/cart'));
+    };
+
+    // Obtenir la catégorie actuelle
+    const currentCategory = categories.find(c => c.id === selectedCategory);
+
+    // Nom et devise du restaurant
+    const restaurantName = restaurantInfo?.nom ||
+        (restaurantSlug ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Restaurant');
+    const currency = restaurantInfo?.devise || '€';
+
+    // Rendu du loading
+    if (loading) {
+        return (
+            <div className="min-h-screen theme-bg-gradient text-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-current mx-auto mb-6 theme-primary-text"></div>
+                    <h2 className="text-2xl font-bold mb-2">Chargement du menu</h2>
+                    <div className="space-y-1 theme-secondary-text">
+                        {themeLoading && <p>• Chargement du thème...</p>}
+                        {dataLoading && <p>• Récupération des données...</p>}
+                        {infoLoading && <p>• Récupération des informations...</p>}
+                    </div>
+                    {theme && (
+                        <p className="text-xs theme-secondary-text mt-2">
+                            🎨 Thème: {theme.nom}
+                        </p>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Rendu des erreurs
+    if (error) {
+        return (
+            <div className="min-h-screen theme-bg-gradient text-white flex items-center justify-center p-4">
+                <div className="text-center max-w-md">
+                    <div className="bg-red-900/20 rounded-full p-6 mb-6 inline-block">
+                        <AlertCircle size={48} className="theme-alert-text" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-3 theme-alert-text">Erreur de chargement</h2>
+                    <p className="theme-secondary-text mb-6">{error}</p>
+                    <div className="space-y-3">
+                        <button
+                            onClick={refetch}
+                            className="theme-primary-gradient text-black px-6 py-3 rounded-full font-bold theme-primary-hover transition-all flex items-center gap-2 mx-auto"
+                        >
+                            <RefreshCw size={18} />
+                            Réessayer
+                        </button>
+                        <button
+                            onClick={() => navigate('/talya-bercy/service')}
+                            className="bg-gray-700 text-white px-6 py-3 rounded-full font-medium hover:bg-gray-600 transition-all block mx-auto"
+                        >
+                            Retourner à l'accueil
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Rendu si aucune donnée
+    if (categories.length === 0) {
+        return (
+            <div className="min-h-screen theme-bg-gradient text-white flex items-center justify-center p-4">
+                <div className="text-center max-w-md">
+                    <div className="bg-gray-800/30 rounded-full p-6 mb-6 inline-block">
+                        <ShoppingCart size={48} className="text-gray-500" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-3">Restaurant non trouvé</h2>
+                    <p className="theme-secondary-text mb-6">
+                        Le restaurant "{restaurantSlug}" n'existe pas ou n'a pas encore été configuré.
+                    </p>
+
+                    {/* Suggestions de restaurants */}
+                    <div className="bg-blue-900/20 border border-blue-700/30 rounded-xl p-4 mb-6">
+                        <h3 className="text-blue-300 font-semibold mb-2">Restaurants disponibles :</h3>
+                        <button
+                            onClick={() => navigate('/talya-bercy/service')}
+                            className="bg-blue-700/50 hover:bg-blue-600/50 text-blue-200 px-4 py-2 rounded-lg transition-all"
+                        >
+                            🏪 Talya Bercy
+                        </button>
                     </div>
 
-                    {/* Titre centré */}
+                    <button
+                        onClick={() => navigate('/talya-bercy/service')}
+                        className="theme-primary-gradient text-black px-6 py-3 rounded-full font-bold theme-primary-hover transition-all"
+                    >
+                        Retourner à l'accueil
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen theme-bg-gradient text-white">
+            {/* Header */}
+            <header className="sticky top-0 z-50 theme-header-bg theme-border border-b theme-shadow">
+                <div className="flex items-center justify-between px-4 py-3">
+                    {/* Logo */}
+                    <div className="flex items-center gap-2 theme-button-primary px-4 py-2 rounded-full theme-shadow-lg">
+                        <span className="font-bold text-lg">TC</span>
+                    </div>
+
+                    {/* Titre */}
                     <div className="flex-1 text-center">
-                        <h1 className="text-xl font-bold text-yellow-500">Menu</h1>
+                        <h1 className="text-xl font-bold theme-gradient-text">
+                            Menu
+                        </h1>
                     </div>
 
                     {/* Bouton panier */}
                     <button
-                        onClick={() => navigate('/cart')}
-                        className="bg-yellow-500 text-black px-4 py-2 rounded-full flex items-center gap-2 font-medium hover:bg-yellow-400 transition-colors"
+                        onClick={() => navigate(`/${restaurantSlug}/cart`)}
+                        className="theme-button-primary px-4 py-2 rounded-full flex items-center gap-2 font-medium transition-all transform hover:scale-105 theme-shadow-lg relative"
                     >
                         <ShoppingCart size={18} />
-                        <span>Panier</span>
+                        <span className="hidden sm:inline">Panier</span>
                         {getCartItemsCount() > 0 && (
-                            <span className="bg-black text-yellow-500 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                            <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold animate-pulse">
                                 {getCartItemsCount()}
-                            </span>
+                            </div>
                         )}
                     </button>
                 </div>
 
+                {/* Titre restaurant et info service */}
                 <div className="text-center pb-4">
-                    <h1 className="text-2xl font-bold text-yellow-500">Café O2 Ice</h1>
-                    <p className="text-sm text-gray-400 mt-1">Saveurs authentiques • Ambiance premium</p>
+                    <h1 className="text-3xl font-bold theme-gradient-text">
+                        {restaurantName}
+                    </h1>
                 </div>
             </header>
 
-            {/* Categories Slider */}
-            <div className="sticky top-[120px] z-40 bg-black border-b border-gray-800">
-                <div
-                    ref={categoriesRef}
-                    className="flex gap-3 px-4 py-4 overflow-x-auto scrollbar-hide"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
-                    {realMenuCategories.map((category) => (
-                        <button
-                            key={category.id}
-                            onClick={() => setSelectedCategory(category.id)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                                selectedCategory === category.id
-                                    ? 'bg-yellow-500 text-black font-medium'
-                                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                            }`}
-                        >
-                            <span className="text-lg">{category.emoji}</span>
-                            <span>{category.name}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
+            {/* Categories Slider Component */}
+            {categories.length > 0 && (
+                <CategoriesSlider
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
+                />
+            )}
 
             {/* Category Title */}
-            <div className="px-4 py-6 border-b border-gray-800">
-                <div className="flex items-center gap-3">
-                    <span className="text-3xl">
-                        {realMenuCategories.find(c => c.id === selectedCategory)?.emoji}
-                    </span>
-                    <h2 className="text-2xl font-bold text-white">
-                        {realMenuCategories.find(c => c.id === selectedCategory)?.name}
-                    </h2>
-                </div>
-                <div className="h-1 w-20 bg-yellow-500 mt-2"></div>
-            </div>
-
-            {/* Menu Items */}
-            <div className="px-4 py-6 pb-24">
-                {filteredItems.map((item) => (
-                    <div
-                        key={item.id}
-                        className="mb-8 cursor-pointer"
-                        onClick={() => setShowItemDetail(item)}
-                    >
-                        {/* Badges */}
-                        <div className="flex gap-2 mb-3">
-                            {item.isPopular && (
-                                <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                                    POPULAIRE
-                                </div>
-                            )}
-                            {item.isSpecial && (
-                                <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-3 py-1 rounded-full text-xs font-medium">
-                                    SPÉCIAL
-                                </div>
-                            )}
+            {currentCategory && (
+                <div className="px-4 py-6 border-b border-gray-800/30">
+                    <div className="flex items-center gap-4">
+                        <div className="text-4xl">
+                            {currentCategory.emoji}
                         </div>
-
-                        {/* Item Card */}
-                        <div className="flex gap-4">
-                            <div className="flex-1">
-                                <h3 className="text-xl font-bold text-white uppercase tracking-wide mb-2">
-                                    {item.name} {item.emoji}
-                                </h3>
-                                <p className="text-gray-400 text-sm mb-3 leading-relaxed">
-                                    {item.description}
-                                </p>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-2xl font-bold text-yellow-500">
-                                        {item.price}DH
-                                    </span>
-                                    <button
-                                        id={`add-${item.id}`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleAddToCart(item);
-                                        }}
-                                        className="bg-yellow-500 text-black px-6 py-2 rounded-full font-medium flex items-center gap-2 hover:bg-yellow-400 transition-all transform"
-                                    >
-                                        <Plus size={18} />
-                                        Ajouter
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="w-32 h-32 rounded-lg overflow-hidden flex-shrink-0">
-                                <img
-                                    src={getImageUrl(item)}
-                                    alt={item.name}
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
+                        <div>
+                            <h2 className="text-3xl font-bold theme-foreground-text">
+                                {currentCategory.name}
+                            </h2>
+                            <p className="theme-secondary-text text-sm mt-1">
+                                {filteredItems.length} article{filteredItems.length > 1 ? 's' : ''} disponible{filteredItems.length > 1 ? 's' : ''}
+                            </p>
                         </div>
                     </div>
-                ))}
-            </div>
-
-            {/* Bottom Navigation */}
-            <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800 z-50">
-                <div className="flex">
-                    <button
-                        onClick={() => navigate('/menu')}
-                        className="flex-1 flex flex-col items-center gap-1 py-4 bg-yellow-500 text-black"
-                    >
-                        <Home size={24} />
-                        <span className="text-xs font-medium">Menu</span>
-                    </button>
-                    <button
-                        onClick={() => navigate('/cart')}
-                        className="flex-1 flex flex-col items-center gap-1 py-4 text-gray-400 hover:text-yellow-500 transition-colors relative"
-                    >
-                        <ShoppingCart size={24} />
-                        <span className="text-xs">Panier ({getCartItemsCount()})</span>
-                        {getCartItemsCount() > 0 && (
-                            <div className="absolute -top-1 right-1/4 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {/* Item Detail Modal */}
-            {showItemDetail && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-end"
-                    onClick={() => setShowItemDetail(null)}
-                >
-                    <div
-                        className="bg-gray-900 rounded-t-3xl p-6 w-full max-h-[80vh] overflow-y-auto"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="w-12 h-1 bg-gray-600 rounded-full mx-auto mb-6"></div>
-
-                        <img
-                            src={getImageUrl(showItemDetail)}
-                            alt={showItemDetail.name}
-                            className="w-full h-64 object-cover rounded-2xl mb-6"
-                        />
-
-                        <div className="flex items-start justify-between mb-4">
-                            <div>
-                                <h3 className="text-2xl font-bold text-white mb-2">
-                                    {showItemDetail.name} {showItemDetail.emoji}
-                                </h3>
-                                <div className="flex gap-2 mb-3">
-                                    {showItemDetail.isPopular && (
-                                        <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                                            POPULAIRE
-                                        </div>
-                                    )}
-                                    {showItemDetail.isSpecial && (
-                                        <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-3 py-1 rounded-full text-xs font-medium">
-                                            SPÉCIAL
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <span className="text-3xl font-bold text-yellow-500">
-                                {showItemDetail.price}DH
-                            </span>
-                        </div>
-
-                        <p className="text-gray-400 mb-6 leading-relaxed">
-                            {showItemDetail.description}
-                        </p>
-
-                        <button
-                            onClick={() => {
-                                handleAddToCart(showItemDetail);
-                                setShowItemDetail(null);
-                            }}
-                            className="w-full bg-yellow-500 text-black py-4 rounded-full font-bold text-lg hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <Plus size={24} />
-                            Ajouter au panier
-                        </button>
-                    </div>
+                    <div className="h-1 w-24 theme-primary-gradient mt-4 rounded-full"></div>
                 </div>
             )}
+
+            {/* Menu Items Component avec devise */}
+            <div className="px-4 py-6 pb-32">
+                {filteredItems.length > 0 ? (
+                    <MenuItems
+                        items={filteredItems}
+                        onItemClick={handleOpenItemDetail}
+                        currency={currency}
+                    />
+                ) : (
+                    <div className="text-center py-12">
+                        <div className="bg-gray-800/30 rounded-full p-6 mb-4 inline-block">
+                            <ShoppingCart size={48} className="text-gray-500" />
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">Aucun article disponible</h3>
+                        <p className="theme-secondary-text">
+                            Cette catégorie ne contient aucun article disponible pour le moment.
+                        </p>
+                    </div>
+                )}
+            </div>
+
+            {/* Bottom Navigation Component */}
+            <BottomNavigation
+                currentPath="menu"
+                cartItemsCount={getCartItemsCount()}
+                onNavigate={handleNavigate}
+            />
+
+            {/* Item Detail Modal Component avec devise */}
+            <ItemDetailModal
+                item={showItemDetail}
+                isOpen={!!showItemDetail}
+                onClose={handleCloseItemDetail}
+                onAddToCart={handleAddToCart}
+                currency={currency}
+            />
         </div>
     );
 };
