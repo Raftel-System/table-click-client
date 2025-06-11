@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
+// src/pages/DevPage.tsx - Version complète avec gestion du menu
+import React, { useState, useEffect } from 'react';
+import { doc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 // Types pour les thèmes
@@ -39,14 +40,58 @@ interface Theme {
     isDefault: boolean;
 }
 
+// Types pour le menu
+interface MenuCategory {
+    id: string;
+    nom: string;
+    ordre: number;
+    active: boolean;
+    emoji?: string;
+}
+
+interface MenuItem {
+    id: string;
+    nom: string;
+    categorieId: string;
+    prix: number;
+    description: string;
+    imageUrl?: string;
+    disponible: boolean;
+    ordre: number;
+    isPopular?: boolean;
+    isSpecial?: boolean;
+}
+
 const DevPage: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'config' | 'themes'>('config');
+    const [activeTab, setActiveTab] = useState<'config' | 'themes' | 'menu'>('config');
 
     // Config Restaurant
     const [slug, setSlug] = useState('');
     const [config, setConfig] = useState('');
     const [categories, setCategories] = useState('');
     const [items, setItems] = useState('');
+
+    // Gestion Menu
+    const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
+    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string>('');
+
+    // Nouvelle catégorie
+    const [newCategoryId, setNewCategoryId] = useState('');
+    const [newCategoryNom, setNewCategoryNom] = useState('');
+    const [newCategoryOrdre, setNewCategoryOrdre] = useState(1);
+    const [newCategoryEmoji, setNewCategoryEmoji] = useState('🍽️');
+
+    // Nouvel item
+    const [newItemId, setNewItemId] = useState('');
+    const [newItemNom, setNewItemNom] = useState('');
+    const [newItemDescription, setNewItemDescription] = useState('');
+    const [newItemPrix, setNewItemPrix] = useState(0);
+    const [newItemCategorieId, setNewItemCategorieId] = useState('');
+    const [newItemOrdre, setNewItemOrdre] = useState(1);
+    const [newItemImageUrl, setNewItemImageUrl] = useState('');
+    const [newItemIsPopular, setNewItemIsPopular] = useState(false);
+    const [newItemIsSpecial, setNewItemIsSpecial] = useState(false);
 
     // Themes
     const [themeId, setThemeId] = useState('');
@@ -69,6 +114,39 @@ const DevPage: React.FC = () => {
     const [success, setSuccess] = useState('#16a34a');
 
     const [message, setMessage] = useState<string | null>(null);
+
+    // Charger les données du menu existant
+    useEffect(() => {
+        if (slug && activeTab === 'menu') {
+            loadMenuData();
+        }
+    }, [slug, activeTab]);
+
+    const loadMenuData = async () => {
+        if (!slug) return;
+
+        try {
+            // Charger les catégories
+            const categoriesSnapshot = await getDocs(collection(db, 'restaurants', slug, 'menuCategories'));
+            const cats: MenuCategory[] = [];
+            categoriesSnapshot.forEach(doc => {
+                cats.push({ id: doc.id, ...doc.data() } as MenuCategory);
+            });
+            setMenuCategories(cats.sort((a, b) => a.ordre - b.ordre));
+
+            // Charger les items
+            const itemsSnapshot = await getDocs(collection(db, 'restaurants', slug, 'menuItems'));
+            const its: MenuItem[] = [];
+            itemsSnapshot.forEach(doc => {
+                its.push({ id: doc.id, ...doc.data() } as MenuItem);
+            });
+            setMenuItems(its.sort((a, b) => a.ordre - b.ordre));
+
+            setMessage('✅ Données du menu chargées');
+        } catch (err) {
+            setMessage('❌ Erreur lors du chargement: ' + (err as Error).message);
+        }
+    };
 
     const handleImportConfig = async () => {
         if (!slug) {
@@ -117,8 +195,112 @@ const DevPage: React.FC = () => {
             }
 
             setMessage('✅ Import config terminé');
+            if (activeTab === 'menu') {
+                loadMenuData();
+            }
         } catch (err) {
             setMessage('❌ Erreur config: ' + (err as Error).message);
+        }
+    };
+
+    const handleCreateCategory = async () => {
+        if (!slug || !newCategoryId || !newCategoryNom) {
+            setMessage('Slug, ID et nom de catégorie requis');
+            return;
+        }
+
+        try {
+            const newCategory: MenuCategory = {
+                id: newCategoryId,
+                nom: newCategoryNom,
+                ordre: newCategoryOrdre,
+                active: true,
+                emoji: newCategoryEmoji
+            };
+
+            await setDoc(
+                doc(db, 'restaurants', slug, 'menuCategories', newCategoryId),
+                newCategory
+            );
+
+            setMessage('✅ Catégorie créée');
+
+            // Reset form
+            setNewCategoryId('');
+            setNewCategoryNom('');
+            setNewCategoryOrdre(menuCategories.length + 1);
+            setNewCategoryEmoji('🍽️');
+
+            loadMenuData();
+        } catch (err) {
+            setMessage('❌ Erreur catégorie: ' + (err as Error).message);
+        }
+    };
+
+    const handleCreateItem = async () => {
+        if (!slug || !newItemId || !newItemNom || !newItemCategorieId) {
+            setMessage('Slug, ID, nom et catégorie requis');
+            return;
+        }
+
+        try {
+            const newItem: MenuItem = {
+                id: newItemId,
+                nom: newItemNom,
+                categorieId: newItemCategorieId,
+                prix: newItemPrix,
+                description: newItemDescription,
+                imageUrl: newItemImageUrl || undefined,
+                disponible: true,
+                ordre: newItemOrdre,
+                isPopular: newItemIsPopular,
+                isSpecial: newItemIsSpecial
+            };
+
+            await setDoc(
+                doc(db, 'restaurants', slug, 'menuItems', newItemId),
+                newItem
+            );
+
+            setMessage('✅ Article créé');
+
+            // Reset form
+            setNewItemId('');
+            setNewItemNom('');
+            setNewItemDescription('');
+            setNewItemPrix(0);
+            setNewItemOrdre(menuItems.length + 1);
+            setNewItemImageUrl('');
+            setNewItemIsPopular(false);
+            setNewItemIsSpecial(false);
+
+            loadMenuData();
+        } catch (err) {
+            setMessage('❌ Erreur article: ' + (err as Error).message);
+        }
+    };
+
+    const handleDeleteCategory = async (categoryId: string) => {
+        if (!slug || !confirm(`Supprimer la catégorie "${categoryId}" ?`)) return;
+
+        try {
+            await deleteDoc(doc(db, 'restaurants', slug, 'menuCategories', categoryId));
+            setMessage('✅ Catégorie supprimée');
+            loadMenuData();
+        } catch (err) {
+            setMessage('❌ Erreur suppression: ' + (err as Error).message);
+        }
+    };
+
+    const handleDeleteItem = async (itemId: string) => {
+        if (!slug || !confirm(`Supprimer l'article "${itemId}" ?`)) return;
+
+        try {
+            await deleteDoc(doc(db, 'restaurants', slug, 'menuItems', itemId));
+            setMessage('✅ Article supprimé');
+            loadMenuData();
+        } catch (err) {
+            setMessage('❌ Erreur suppression: ' + (err as Error).message);
         }
     };
 
@@ -163,7 +345,6 @@ const DevPage: React.FC = () => {
                 isDefault: isDefaultTheme
             };
 
-            // Sauvegarder dans app/settings/themes/{themeId}
             await setDoc(
                 doc(db, 'app', 'settings', 'themes', themeId),
                 theme
@@ -225,6 +406,51 @@ const DevPage: React.FC = () => {
         }
     };
 
+    const generateMenuPreset = () => {
+        const categoriesPreset = [
+            { id: 'breakfast', nom: 'Petit Déjeuner', ordre: 1, active: true, emoji: '🌅' },
+            { id: 'starters', nom: 'Entrées', ordre: 2, active: true, emoji: '🥗' },
+            { id: 'mains', nom: 'Plats Principaux', ordre: 3, active: true, emoji: '🍽️' },
+            { id: 'desserts', nom: 'Desserts', ordre: 4, active: true, emoji: '🍰' },
+            { id: 'drinks', nom: 'Boissons', ordre: 5, active: true, emoji: '🥤' }
+        ];
+
+        const itemsPreset = [
+            {
+                id: '1',
+                nom: 'Petit Déjeuner Complet',
+                categorieId: 'breakfast',
+                prix: 12.50,
+                description: 'Café, jus d\'orange, croissant, confiture et beurre',
+                disponible: true,
+                ordre: 1,
+                isPopular: true
+            },
+            {
+                id: '2',
+                nom: 'Salade Caesar',
+                categorieId: 'starters',
+                prix: 8.90,
+                description: 'Salade fraîche, croûtons, parmesan, sauce caesar',
+                disponible: true,
+                ordre: 1
+            },
+            {
+                id: '3',
+                nom: 'Burger Classique',
+                categorieId: 'mains',
+                prix: 14.90,
+                description: 'Steak de bœuf, salade, tomate, oignon, frites',
+                disponible: true,
+                ordre: 1,
+                isSpecial: true
+            }
+        ];
+
+        setCategories(JSON.stringify(categoriesPreset, null, 2));
+        setItems(JSON.stringify(itemsPreset, null, 2));
+    };
+
     const inputStyle = {
         width: '100%',
         padding: '0.75rem',
@@ -257,10 +483,14 @@ const DevPage: React.FC = () => {
         color: '#f9fafb'
     };
 
+    const filteredItems = selectedCategory
+        ? menuItems.filter(item => item.categorieId === selectedCategory)
+        : menuItems;
+
     return (
         <div style={{
             padding: '2rem',
-            maxWidth: '1000px',
+            maxWidth: '1200px',
             margin: '0 auto',
             fontFamily: 'Arial, sans-serif',
             color: '#f0f0f0',
@@ -303,6 +533,20 @@ const DevPage: React.FC = () => {
                     >
                         🎨 Config Thèmes
                     </button>
+                    <button
+                        onClick={() => setActiveTab('menu')}
+                        style={{
+                            padding: '1rem 1.5rem',
+                            backgroundColor: activeTab === 'menu' ? '#facc15' : 'transparent',
+                            color: activeTab === 'menu' ? '#1f2937' : '#f9fafb',
+                            border: 'none',
+                            borderRadius: '8px 8px 0 0',
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                        }}
+                    >
+                        🍽️ Gestion Menu
+                    </button>
                 </div>
             </div>
 
@@ -326,6 +570,17 @@ const DevPage: React.FC = () => {
                         />
                     </div>
 
+                    {/* Bouton preset menu */}
+                    <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#374151', borderRadius: '8px' }}>
+                        <h3 style={{ marginBottom: '1rem', color: '#facc15' }}>Menu Prédéfini</h3>
+                        <button
+                            onClick={generateMenuPreset}
+                            style={secondaryButtonStyle}
+                        >
+                            📋 Générer un menu exemple
+                        </button>
+                    </div>
+
                     {/* Config */}
                     <div style={{ marginBottom: '1.25rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Config JSON</label>
@@ -334,7 +589,7 @@ const DevPage: React.FC = () => {
                             onChange={(e) => setConfig(e.target.value)}
                             rows={5}
                             style={textareaStyle}
-                            placeholder='{"nom": "Restaurant Name", "adresse": "...", ...}'
+                            placeholder='{"nom": "Restaurant Name", "adresse": "...", "devise": "€", "theme": "sunrise", ...}'
                         />
                     </div>
 
@@ -346,7 +601,7 @@ const DevPage: React.FC = () => {
                             onChange={(e) => setCategories(e.target.value)}
                             rows={5}
                             style={textareaStyle}
-                            placeholder='[{"id": "breakfast", "nom": "Petit Déjeuner", ...}, ...]'
+                            placeholder='[{"id": "breakfast", "nom": "Petit Déjeuner", "ordre": 1, "active": true, "emoji": "🌅"}, ...]'
                         />
                     </div>
 
@@ -358,7 +613,7 @@ const DevPage: React.FC = () => {
                             onChange={(e) => setItems(e.target.value)}
                             rows={5}
                             style={textareaStyle}
-                            placeholder='[{"id": "1", "nom": "Article", "prix": 50, ...}, ...]'
+                            placeholder='[{"id": "1", "nom": "Article", "prix": 50, "categorieId": "breakfast", "description": "...", "disponible": true, "ordre": 1}, ...]'
                         />
                     </div>
 
@@ -371,6 +626,357 @@ const DevPage: React.FC = () => {
                     >
                         📤 Importer Config Restaurant
                     </button>
+                </div>
+            )}
+
+            {/* Gestion Menu Tab */}
+            {activeTab === 'menu' && (
+                <div>
+                    <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#facc15' }}>
+                        Gestion du Menu
+                    </h2>
+
+                    {!slug && (
+                        <div style={{ padding: '1rem', backgroundColor: '#7f1d1d', borderRadius: '8px', marginBottom: '2rem' }}>
+                            <p>⚠️ Veuillez d'abord saisir le slug du restaurant dans l'onglet Config</p>
+                        </div>
+                    )}
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                        {/* Création de catégorie */}
+                        <div style={{ backgroundColor: '#374151', padding: '1.5rem', borderRadius: '8px' }}>
+                            <h3 style={{ marginBottom: '1rem', color: '#facc15' }}>Nouvelle Catégorie</h3>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>ID</label>
+                                <input
+                                    value={newCategoryId}
+                                    onChange={(e) => setNewCategoryId(e.target.value)}
+                                    style={inputStyle}
+                                    placeholder="ex: breakfast"
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nom</label>
+                                <input
+                                    value={newCategoryNom}
+                                    onChange={(e) => setNewCategoryNom(e.target.value)}
+                                    style={inputStyle}
+                                    placeholder="ex: Petit Déjeuner"
+                                />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Ordre</label>
+                                    <input
+                                        type="number"
+                                        value={newCategoryOrdre}
+                                        onChange={(e) => setNewCategoryOrdre(parseInt(e.target.value))}
+                                        style={inputStyle}
+                                        min="1"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Emoji</label>
+                                    <input
+                                        value={newCategoryEmoji}
+                                        onChange={(e) => setNewCategoryEmoji(e.target.value)}
+                                        style={inputStyle}
+                                        placeholder="🌅"
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleCreateCategory}
+                                disabled={!slug || !newCategoryId || !newCategoryNom}
+                                style={buttonStyle}
+                            >
+                                ➕ Créer Catégorie
+                            </button>
+                        </div>
+
+                        {/* Création d'item */}
+                        <div style={{ backgroundColor: '#374151', padding: '1.5rem', borderRadius: '8px' }}>
+                            <h3 style={{ marginBottom: '1rem', color: '#facc15' }}>Nouvel Article</h3>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>ID</label>
+                                <input
+                                    value={newItemId}
+                                    onChange={(e) => setNewItemId(e.target.value)}
+                                    style={inputStyle}
+                                    placeholder="ex: 1"
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nom</label>
+                                <input
+                                    value={newItemNom}
+                                    onChange={(e) => setNewItemNom(e.target.value)}
+                                    style={inputStyle}
+                                    placeholder="ex: Café Croissant"
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Description</label>
+                                <textarea
+                                    value={newItemDescription}
+                                    onChange={(e) => setNewItemDescription(e.target.value)}
+                                    style={inputStyle}
+                                    rows={2}
+                                    placeholder="Description de l'article..."
+                                />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Prix</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={newItemPrix}
+                                        onChange={(e) => setNewItemPrix(parseFloat(e.target.value))}
+                                        style={inputStyle}
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Ordre</label>
+                                    <input
+                                        type="number"
+                                        value={newItemOrdre}
+                                        onChange={(e) => setNewItemOrdre(parseInt(e.target.value))}
+                                        style={inputStyle}
+                                        min="1"
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Catégorie</label>
+                                <select
+                                    value={newItemCategorieId}
+                                    onChange={(e) => setNewItemCategorieId(e.target.value)}
+                                    style={inputStyle}
+                                >
+                                    <option value="">Sélectionner une catégorie</option>
+                                    {menuCategories.map(cat => (
+                                        <option key={cat.id} value={cat.id}>
+                                            {cat.emoji} {cat.nom}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Image URL (optionnel)</label>
+                                <input
+                                    value={newItemImageUrl}
+                                    onChange={(e) => setNewItemImageUrl(e.target.value)}
+                                    style={inputStyle}
+                                    placeholder="nom-fichier.jpg"
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={newItemIsPopular}
+                                        onChange={(e) => setNewItemIsPopular(e.target.checked)}
+                                    />
+                                    Populaire
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={newItemIsSpecial}
+                                        onChange={(e) => setNewItemIsSpecial(e.target.checked)}
+                                    />
+                                    Spécial
+                                </label>
+                            </div>
+
+                            <button
+                                onClick={handleCreateItem}
+                                disabled={!slug || !newItemId || !newItemNom || !newItemCategorieId}
+                                style={buttonStyle}
+                            >
+                                ➕ Créer Article
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Liste des catégories existantes */}
+                    <div style={{ marginTop: '2rem' }}>
+                        <h3 style={{ marginBottom: '1rem', color: '#facc15' }}>Catégories Existantes ({menuCategories.length})</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                            {menuCategories.map(category => (
+                                <div key={category.id} style={{ backgroundColor: '#4b5563', padding: '1rem', borderRadius: '8px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                        <h4 style={{ color: '#facc15', margin: 0 }}>
+                                            {category.emoji} {category.nom}
+                                        </h4>
+                                        <button
+                                            onClick={() => handleDeleteCategory(category.id)}
+                                            style={{ ...secondaryButtonStyle, padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: '#7f1d1d' }}
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                    <p style={{ fontSize: '0.875rem', color: '#d1d5db', margin: 0 }}>
+                                        ID: {category.id} | Ordre: {category.ordre} | Actif: {category.active ? '✅' : '❌'}
+                                    </p>
+                                    <p style={{ fontSize: '0.75rem', color: '#9ca3af', margin: '0.5rem 0 0 0' }}>
+                                        {menuItems.filter(item => item.categorieId === category.id).length} article(s)
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Filtre par catégorie */}
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#facc15' }}>
+                            Filtrer les articles par catégorie
+                        </label>
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            style={inputStyle}
+                        >
+                            <option value="">Toutes les catégories</option>
+                            {menuCategories.map(cat => (
+                                <option key={cat.id} value={cat.id}>
+                                    {cat.emoji} {cat.nom} ({menuItems.filter(item => item.categorieId === cat.id).length})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Liste des articles */}
+                    <div>
+                        <h3 style={{ marginBottom: '1rem', color: '#facc15' }}>
+                            Articles {selectedCategory ? `(${filteredItems.length} dans cette catégorie)` : `(${menuItems.length} au total)`}
+                        </h3>
+
+                        {filteredItems.length === 0 ? (
+                            <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#374151', borderRadius: '8px' }}>
+                                <p style={{ color: '#9ca3af' }}>
+                                    {selectedCategory ? 'Aucun article dans cette catégorie' : 'Aucun article créé'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1rem' }}>
+                                {filteredItems.map(item => {
+                                    const category = menuCategories.find(cat => cat.id === item.categorieId);
+                                    return (
+                                        <div key={item.id} style={{ backgroundColor: '#4b5563', padding: '1.5rem', borderRadius: '8px', position: 'relative' }}>
+                                            {/* Badges */}
+                                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                                                {item.isPopular && (
+                                                    <span style={{ backgroundColor: '#06b6d4', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '0.5rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                                        🔥 POPULAIRE
+                                                    </span>
+                                                )}
+                                                {item.isSpecial && (
+                                                    <span style={{ backgroundColor: '#8b5cf6', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '0.5rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                                        ⭐ SPÉCIAL
+                                                    </span>
+                                                )}
+                                                {!item.disponible && (
+                                                    <span style={{ backgroundColor: '#ef4444', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '0.5rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                                        ❌ INDISPONIBLE
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Bouton supprimer */}
+                                            <button
+                                                onClick={() => handleDeleteItem(item.id)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: '1rem',
+                                                    right: '1rem',
+                                                    ...secondaryButtonStyle,
+                                                    padding: '0.25rem 0.5rem',
+                                                    fontSize: '0.75rem',
+                                                    backgroundColor: '#7f1d1d'
+                                                }}
+                                            >
+                                                🗑️
+                                            </button>
+
+                                            {/* Info article */}
+                                            <h4 style={{ color: '#facc15', marginBottom: '0.5rem', fontSize: '1.1rem', marginTop: 0, paddingRight: '2rem' }}>
+                                                {item.nom}
+                                            </h4>
+
+                                            <p style={{ color: '#d1d5db', fontSize: '0.875rem', marginBottom: '1rem', lineHeight: 1.4 }}>
+                                                {item.description}
+                                            </p>
+
+                                            {/* Métadonnées */}
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.75rem', color: '#9ca3af' }}>
+                                                <div>
+                                                    <strong>ID:</strong> {item.id}
+                                                </div>
+                                                <div>
+                                                    <strong>Prix:</strong> {item.prix}€
+                                                </div>
+                                                <div>
+                                                    <strong>Catégorie:</strong> {category?.emoji} {category?.nom || item.categorieId}
+                                                </div>
+                                                <div>
+                                                    <strong>Ordre:</strong> {item.ordre}
+                                                </div>
+                                                {item.imageUrl && (
+                                                    <div style={{ gridColumn: '1 / -1' }}>
+                                                        <strong>Image:</strong> {item.imageUrl}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Actions globales */}
+                    <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#374151', borderRadius: '8px' }}>
+                        <h3 style={{ marginBottom: '1rem', color: '#facc15' }}>Actions Globales</h3>
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            <button
+                                onClick={loadMenuData}
+                                disabled={!slug}
+                                style={secondaryButtonStyle}
+                            >
+                                🔄 Recharger les données
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (confirm('Exporter le menu actuel vers les champs JSON ?')) {
+                                        setCategories(JSON.stringify(menuCategories, null, 2));
+                                        setItems(JSON.stringify(menuItems, null, 2));
+                                        setMessage('✅ Menu exporté vers les champs JSON');
+                                    }
+                                }}
+                                disabled={!slug || menuCategories.length === 0}
+                                style={secondaryButtonStyle}
+                            >
+                                📤 Exporter vers JSON
+                            </button>
+                        </div>
+                        <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+                            L'export vous permet de copier la structure actuelle du menu vers les champs JSON pour sauvegarde ou réutilisation.
+                        </p>
+                    </div>
                 </div>
             )}
 
