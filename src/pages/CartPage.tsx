@@ -1,4 +1,4 @@
-// src/pages/CartPage.tsx - Version avec thème dynamique
+// src/pages/CartPage.tsx - Version mise à jour avec service et sans livraison
 import React, { useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -14,11 +14,13 @@ import {
     MessageSquare,
     CheckCircle,
     AlertCircle,
-    Loader2
+    Loader2,
+    Settings
 } from 'lucide-react';
 
 import { useCart } from '../contexts/CartContext';
 import { useTheme } from '../hooks/useTheme';
+import { useOrderType } from '../contexts/OrderTypeContext';
 
 const CartPage: React.FC = () => {
     const { restaurantSlug } = useParams<{ restaurantSlug: string }>();
@@ -35,19 +37,20 @@ const CartPage: React.FC = () => {
         validateCart
     } = useCart();
 
+    const { orderConfig, isOrderConfigured, getOrderDisplayName, getOrderIcon, getEstimatedTime } = useOrderType();
+
     // Hook pour le thème dynamique
     const { theme, loading: themeLoading, isLightTheme } = useTheme(restaurantSlug || '');
 
     // États locaux
-    const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
     const [showCheckout, setShowCheckout] = useState(false);
     const [editingInstructions, setEditingInstructions] = useState<string | null>(null);
     const [tempInstructions, setTempInstructions] = useState('');
     const [orderNote, setOrderNote] = useState('');
     const [processingItems, setProcessingItems] = useState<Set<string>>(new Set());
 
-    // Calculs
-    const cartSummary = getCartSummary(orderType);
+    // Calculs - plus de type livraison/emporter, juste le total
+    const cartSummary = getCartSummary('pickup'); // On utilise toujours 'pickup' car plus de livraison
     const cartValidation = validateCart();
 
     // Navigation avec slug
@@ -56,7 +59,15 @@ const CartPage: React.FC = () => {
         navigate(basePath + path);
     };
 
-    // Gestion des actions (reste identique mais avec les nouvelles classes CSS)
+    // Rediriger vers la sélection de service si pas configuré
+    React.useEffect(() => {
+        if (!themeLoading && !isOrderConfigured) {
+            console.log('⚠️ Service non configuré, redirection depuis le panier');
+            navigate(`/${restaurantSlug}/service`);
+        }
+    }, [themeLoading, isOrderConfigured, navigate, restaurantSlug]);
+
+    // Gestion des actions
     const handleRemoveItem = useCallback(async (cartItemId: string) => {
         setProcessingItems(prev => new Set(prev).add(cartItemId));
         try {
@@ -137,9 +148,18 @@ const CartPage: React.FC = () => {
         }
     }, [duplicateCartItem]);
 
+    const handleChangeService = () => {
+        navigate(`/${restaurantSlug}/service`);
+    };
+
     const handleCheckout = async () => {
         if (!cartValidation.isValid) {
             alert('⚠️ Votre panier contient des erreurs: ' + cartValidation.errors.join(', '));
+            return;
+        }
+
+        if (!isOrderConfigured) {
+            alert('⚠️ Veuillez d\'abord configurer votre service (table ou à emporter)');
             return;
         }
 
@@ -149,7 +169,11 @@ const CartPage: React.FC = () => {
             // Simulation de traitement de commande
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            alert(`🎉 Commande confirmée !\nTotal: ${cartSummary.total.toFixed(2)} DH\nType: ${orderType === 'delivery' ? 'Livraison' : 'À emporter'}`);
+            const serviceType = orderConfig?.type === 'dine-in'
+                ? `Table ${orderConfig.tableNumber}`
+                : 'À emporter';
+
+            alert(`🎉 Commande confirmée !\nTotal: ${cartSummary.total.toFixed(2)} DH\nService: ${serviceType}`);
             await clearCart();
             navigateWithSlug('/menu');
         } catch (error) {
@@ -256,38 +280,36 @@ const CartPage: React.FC = () => {
 
             {/* Contenu principal avec thème */}
             <div className="px-4 py-6 pb-32 max-w-4xl mx-auto">
-                {/* Type de commande avec cartes thématiques */}
-                <div className="mb-8">
-                    <h3 className="text-xl font-bold theme-foreground-text mb-4 flex items-center gap-2">
-                        🚀 Type de commande
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            onClick={() => setOrderType('delivery')}
-                            className={`p-6 rounded-2xl border-2 transition-all duration-300 theme-card-bg backdrop-blur-sm ${
-                                orderType === 'delivery'
-                                    ? 'theme-border border-opacity-100 theme-shadow-lg scale-105'
-                                    : 'theme-border border-opacity-50 hover:border-opacity-75'
-                            }`}
-                        >
-                            <div className="text-3xl mb-3">🛵</div>
-                            <div className="font-bold text-lg theme-foreground-text">Livraison</div>
-                            <div className="text-sm theme-secondary-text mt-1">30-45 min • +{cartSummary.deliveryFee} DH</div>
-                        </button>
-                        <button
-                            onClick={() => setOrderType('pickup')}
-                            className={`p-6 rounded-2xl border-2 transition-all duration-300 theme-card-bg backdrop-blur-sm ${
-                                orderType === 'pickup'
-                                    ? 'theme-border border-opacity-100 theme-shadow-lg scale-105'
-                                    : 'theme-border border-opacity-50 hover:border-opacity-75'
-                            }`}
-                        >
-                            <div className="text-3xl mb-3">🏃</div>
-                            <div className="font-bold text-lg theme-foreground-text">À emporter</div>
-                            <div className="text-sm theme-secondary-text mt-1">15-20 min • Gratuit</div>
-                        </button>
+                {/* Info service configuré avec possibilité de modifier */}
+                {isOrderConfigured && orderConfig && (
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold theme-foreground-text mb-4 flex items-center gap-2">
+                            🎯 Votre service
+                        </h3>
+                        <div className="theme-card-bg backdrop-blur-sm rounded-2xl p-6 theme-border theme-shadow">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="text-3xl">{getOrderIcon()}</div>
+                                    <div>
+                                        <p className="font-bold text-lg theme-foreground-text">
+                                            {getOrderDisplayName()}
+                                        </p>
+                                        <p className="theme-secondary-text text-sm">
+                                            Temps estimé: {getEstimatedTime()}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleChangeService}
+                                    className="theme-button-secondary px-4 py-2 rounded-xl hover:opacity-80 transition-colors flex items-center gap-2"
+                                >
+                                    <Settings size={16} />
+                                    <span className="hidden sm:inline">Modifier</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Articles du panier avec cartes thématiques */}
                 <div className="mb-8">
@@ -461,7 +483,7 @@ const CartPage: React.FC = () => {
                             onChange={(e) => setOrderNote(e.target.value)}
                             className="w-full theme-input resize-none focus:theme-primary-focus transition-all min-h-[80px]"
                             rows={3}
-                            placeholder="Ex: Commande pour une fête, livraison discrète, allergies particulières..."
+                            placeholder="Ex: Commande pour une fête, allergies particulières, préférences spéciales..."
                             maxLength={300}
                         />
                         <div className="text-right text-xs theme-secondary-text mt-2">
@@ -470,7 +492,7 @@ const CartPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Résumé de la commande avec thème */}
+                {/* Résumé de la commande avec thème (simplifié sans frais de livraison) */}
                 <div className="theme-card-bg backdrop-blur-sm rounded-2xl p-6 theme-border mb-8 theme-shadow">
                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2 theme-foreground-text">
                         📊 Résumé de la commande
@@ -486,13 +508,6 @@ const CartPage: React.FC = () => {
                             <span>Frais de service (5%)</span>
                             <span className="font-medium">{cartSummary.serviceFee.toFixed(2)} DH</span>
                         </div>
-
-                        {orderType === 'delivery' && (
-                            <div className="flex justify-between items-center theme-secondary-text">
-                                <span>Frais de livraison</span>
-                                <span className="font-medium">{cartSummary.deliveryFee.toFixed(2)} DH</span>
-                            </div>
-                        )}
 
                         <div className="h-px theme-border my-4"></div>
 
@@ -510,10 +525,10 @@ const CartPage: React.FC = () => {
                             <Clock size={20} className="theme-primary-text" />
                             <div>
                                 <p className="font-medium theme-foreground-text">
-                                    Temps {orderType === 'delivery' ? 'de livraison' : 'de préparation'} estimé
+                                    Temps estimé
                                 </p>
                                 <p className="text-sm theme-secondary-text">
-                                    {orderType === 'delivery' ? '30-45 minutes' : '15-20 minutes'}
+                                    {getEstimatedTime()}
                                 </p>
                             </div>
                         </div>
@@ -537,7 +552,7 @@ const CartPage: React.FC = () => {
                         {/* Bouton commander */}
                         <button
                             onClick={handleCheckout}
-                            disabled={showCheckout || !cartValidation.isValid || isLoading}
+                            disabled={showCheckout || !cartValidation.isValid || isLoading || !isOrderConfigured}
                             className="flex-1 theme-button-primary py-3 px-6 rounded-xl font-bold text-lg hover:opacity-90 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed theme-shadow-lg"
                         >
                             {showCheckout ? (
@@ -563,6 +578,16 @@ const CartPage: React.FC = () => {
                             </div>
                         </div>
                     )}
+
+                    {/* Message si service non configuré */}
+                    {!isOrderConfigured && (
+                        <div className="mt-2 p-2 bg-orange-900/20 border border-orange-700/30 rounded-lg">
+                            <div className="flex items-center gap-2 text-orange-300 text-sm">
+                                <AlertCircle size={16} />
+                                Service non configuré. Choisissez une table ou à emporter.
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -585,9 +610,9 @@ const CartPage: React.FC = () => {
                                 <span className="theme-primary-text font-bold">{cartSummary.total.toFixed(2)} DH</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="theme-secondary-text">Type:</span>
+                                <span className="theme-secondary-text">Service:</span>
                                 <span className="theme-foreground-text font-medium">
-                                    {orderType === 'delivery' ? '🛵 Livraison' : '🏃 À emporter'}
+                                    {getOrderIcon()} {getOrderDisplayName()}
                                 </span>
                             </div>
                         </div>

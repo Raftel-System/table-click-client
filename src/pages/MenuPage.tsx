@@ -1,4 +1,4 @@
-// src/pages/MenuPage.tsx - Version avec thème dynamique
+// src/pages/MenuPage.tsx
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, AlertCircle, RefreshCw } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -13,11 +13,13 @@ import BottomNavigation from '../components/BottomNavigation';
 import { useRestaurantData } from '../hooks/useRestaurantData';
 import { useTheme } from '../hooks/useTheme';
 import { type MenuItem, useCart } from '../contexts/CartContext';
+import { useOrderType } from '../contexts/OrderTypeContext';
 
 const MenuPage: React.FC = () => {
     const { restaurantSlug } = useParams<{ restaurantSlug: string }>();
     const navigate = useNavigate();
     const { addToCart, getCartItemsCount } = useCart();
+    const { isOrderConfigured } = useOrderType();
 
     // État local
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -30,6 +32,14 @@ const MenuPage: React.FC = () => {
     // Loading combiné
     const loading = dataLoading || themeLoading;
     const error = dataError || themeError;
+
+    // Vérifier si le service est configuré, sinon rediriger
+    useEffect(() => {
+        if (!loading && !error && !isOrderConfigured) {
+            console.log('⚠️ Service non configuré, redirection vers la sélection');
+            navigate(`/${restaurantSlug}/service`);
+        }
+    }, [loading, error, isOrderConfigured, navigate, restaurantSlug]);
 
     // Sélectionner automatiquement la première catégorie
     useEffect(() => {
@@ -107,7 +117,7 @@ const MenuPage: React.FC = () => {
                             Réessayer
                         </button>
                         <button
-                            onClick={() => navigate('/talya-bercy/menu')}
+                            onClick={() => navigate('/talya-bercy/service')}
                             className="bg-gray-700 text-white px-6 py-3 rounded-full font-medium hover:bg-gray-600 transition-all block mx-auto"
                         >
                             Retourner à l'accueil
@@ -135,7 +145,7 @@ const MenuPage: React.FC = () => {
                     <div className="bg-blue-900/20 border border-blue-700/30 rounded-xl p-4 mb-6">
                         <h3 className="text-blue-300 font-semibold mb-2">Restaurants disponibles :</h3>
                         <button
-                            onClick={() => navigate('/talya-bercy/menu')}
+                            onClick={() => navigate('/talya-bercy/service')}
                             className="bg-blue-700/50 hover:bg-blue-600/50 text-blue-200 px-4 py-2 rounded-lg transition-all"
                         >
                             🏪 Talya Bercy
@@ -143,7 +153,7 @@ const MenuPage: React.FC = () => {
                     </div>
 
                     <button
-                        onClick={() => navigate('/talya-bercy/menu')}
+                        onClick={() => navigate('/talya-bercy/service')}
                         className="theme-primary-gradient text-black px-6 py-3 rounded-full font-bold theme-primary-hover transition-all"
                     >
                         Retourner à l'accueil
@@ -160,7 +170,7 @@ const MenuPage: React.FC = () => {
                 <div className="flex items-center justify-between px-4 py-3">
                     {/* Logo */}
                     <div className="flex items-center gap-2 theme-button-primary px-4 py-2 rounded-full theme-shadow-lg">
-                        <span className="font-bold text-lg">O2</span>
+                        <span className="font-bold text-lg">TC</span>
                     </div>
 
                     {/* Titre */}
@@ -168,17 +178,6 @@ const MenuPage: React.FC = () => {
                         <h1 className="text-xl font-bold theme-gradient-text">
                             Menu
                         </h1>
-                        {restaurantSlug && (
-                            <p className="text-xs theme-secondary-text capitalize">
-                                {restaurantSlug.replace('-', ' ')}
-                            </p>
-                        )}
-                        {/* Indicateur de thème en dev */}
-                        {process.env.NODE_ENV === 'development' && theme && (
-                            <p className="text-xs theme-accent-text">
-                                🎨 {theme.id}
-                            </p>
-                        )}
                     </div>
 
                     {/* Bouton panier */}
@@ -196,16 +195,12 @@ const MenuPage: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Titre restaurant */}
+                {/* Titre restaurant et info service */}
                 <div className="text-center pb-4">
                     <h1 className="text-3xl font-bold theme-gradient-text">
                         {restaurantSlug ? restaurantSlug.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Restaurant'}
                     </h1>
-                    <p className="text-sm theme-secondary-text mt-1 flex items-center justify-center gap-2">
-                        <span>✨ Saveurs authentiques</span>
-                        <span>•</span>
-                        <span>🏆 Ambiance premium</span>
-                    </p>
+
                 </div>
             </header>
 
