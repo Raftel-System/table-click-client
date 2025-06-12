@@ -72,8 +72,8 @@ const PrinterTab: React.FC<PrinterTabProps> = ({ onMessage }) => {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
                 },
-                // Timeout après 10 secondes
                 signal: AbortSignal.timeout(10000)
             });
 
