@@ -1,5 +1,5 @@
 // src/services/orderService.ts
-import { ref, push, set, get } from 'firebase/database';
+import { ref, set, get } from 'firebase/database';
 import { rtDatabase } from '../lib/firebase';
 import type { CartItem } from '../contexts/CartContext';
 import type { OrderConfig } from '../contexts/OrderTypeContext';
