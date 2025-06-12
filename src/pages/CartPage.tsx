@@ -1,27 +1,25 @@
-// src/pages/CartPage.tsx - Version mise à jour avec infos restaurant
+// src/pages/CartPage.tsx - Version finale refactorisée
 import React, { useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
     ShoppingCart,
-    Trash2,
-    Plus,
-    Minus,
     CreditCard,
-    Clock,
     Home,
-    Edit3,
-    Copy,
-    MessageSquare,
-    CheckCircle,
+    Settings,
     AlertCircle,
-    Loader2,
-    Settings
+    Loader2
 } from 'lucide-react';
 
 import { useCart } from '../contexts/CartContext';
 import { useRestaurantInfo } from '../hooks/useRestaurantInfo';
 import { useTheme } from '../hooks/useTheme';
 import { useOrderType } from '../contexts/OrderTypeContext';
+import { OrderService } from '../services/orderService';
+
+// Import des composants cart
+import CartItem from '../components/cart/CartItem';
+import CartSummary from '../components/cart/CartSummary';
+import CheckoutModal from '../components/cart/CheckoutModal';
 
 const CartPage: React.FC = () => {
     const { restaurantSlug } = useParams<{ restaurantSlug: string }>();
@@ -44,13 +42,12 @@ const CartPage: React.FC = () => {
 
     // États locaux
     const [showCheckout, setShowCheckout] = useState(false);
-    const [editingInstructions, setEditingInstructions] = useState<string | null>(null);
-    const [tempInstructions, setTempInstructions] = useState('');
     const [orderNote, setOrderNote] = useState('');
     const [processingItems, setProcessingItems] = useState<Set<string>>(new Set());
+    const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
-    // Calculs - plus de type livraison/emporter, juste le total
-    const cartSummary = getCartSummary('pickup'); // On utilise toujours 'pickup' car plus de livraison
+    // Calculs
+    const cartSummary = getCartSummary('pickup');
     const cartValidation = validateCart();
 
     // Informations du restaurant
@@ -109,34 +106,20 @@ const CartPage: React.FC = () => {
         }
     }, [removeFromCart, updateQuantity]);
 
-    const handleEditInstructions = (cartItemId: string, currentInstructions: string = '') => {
-        setEditingInstructions(cartItemId);
-        setTempInstructions(currentInstructions);
-    };
-
-    const handleSaveInstructions = useCallback(async () => {
-        if (!editingInstructions) return;
-
-        setProcessingItems(prev => new Set(prev).add(editingInstructions));
+    const handleUpdateInstructions = useCallback(async (cartItemId: string, instructions: string) => {
+        setProcessingItems(prev => new Set(prev).add(cartItemId));
         try {
-            await updateInstructions(editingInstructions, tempInstructions.trim());
-            setEditingInstructions(null);
-            setTempInstructions('');
+            await updateInstructions(cartItemId, instructions);
         } catch (error) {
             console.error('Erreur instructions:', error);
         } finally {
             setProcessingItems(prev => {
                 const newSet = new Set(prev);
-                newSet.delete(editingInstructions);
+                newSet.delete(cartItemId);
                 return newSet;
             });
         }
-    }, [editingInstructions, tempInstructions, updateInstructions]);
-
-    const handleCancelEdit = () => {
-        setEditingInstructions(null);
-        setTempInstructions('');
-    };
+    }, [updateInstructions]);
 
     const handleDuplicateItem = useCallback(async (cartItemId: string) => {
         setProcessingItems(prev => new Set(prev).add(cartItemId));
@@ -157,33 +140,91 @@ const CartPage: React.FC = () => {
         navigate(`/${restaurantSlug}/service`);
     };
 
+    // Traitement de la commande avec OrderService
     const handleCheckout = async () => {
         if (!cartValidation.isValid) {
-            alert('⚠️ Votre panier contient des erreurs: ' + cartValidation.errors.join(', '));
+            setCheckoutError('Votre panier contient des erreurs: ' + cartValidation.errors.join(', '));
             return;
         }
 
-        if (!isOrderConfigured) {
-            alert('⚠️ Veuillez d\'abord configurer votre service (table ou à emporter)');
+        if (!isOrderConfigured || !orderConfig) {
+            setCheckoutError('Veuillez d\'abord configurer votre service (table ou à emporter)');
+            return;
+        }
+
+        if (!restaurantSlug) {
+            setCheckoutError('Restaurant non identifié');
             return;
         }
 
         setShowCheckout(true);
+        setCheckoutError(null);
 
         try {
-            // Simulation de traitement de commande
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            // Validation des données avec OrderService
+            const validation = OrderService.validateOrderData(cartItems, orderConfig, cartSummary.total);
+            if (!validation.isValid) {
+                throw new Error('Données de commande invalides: ' + validation.errors.join(', '));
+            }
 
-            const serviceType = orderConfig?.type === 'dine-in'
+            console.log('🚀 Début de traitement de la commande...');
+
+            // Créer la commande dans la Realtime Database
+            const result = await OrderService.createOrder(
+                restaurantSlug,
+                cartItems,
+                orderConfig,
+                cartSummary.total,
+                orderNote.trim() || undefined
+            );
+
+            const { orderId, clientNumber } = result;
+
+            // Afficher le résumé de la commande dans les logs
+            const orderSummaryForLog = OrderService.generateOrderSummary({
+                createdAt: new Date().toISOString(),
+                status: 'en_attente',
+                items: cartItems.map(item => ({
+                    produitId: item.id,
+                    nom: item.name,
+                    quantite: item.quantity,
+                    prix: item.price,
+                    instructions: item.instructions
+                })),
+                total: cartSummary.total,
+                mode: orderConfig.type === 'dine-in' ? 'sur_place' : 'emporter',
+                ...(orderConfig.type === 'dine-in' && { tableNumber: orderConfig.tableNumber }),
+                ...(orderConfig.type === 'takeaway' && clientNumber && { numeroClient: clientNumber }),
+                ...(orderNote && { noteCommande: orderNote.trim() })
+            });
+
+            console.log(orderSummaryForLog);
+
+            // Simulation d'attente pour l'UX
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Succès !
+            const serviceType = orderConfig.type === 'dine-in'
                 ? `Table ${orderConfig.tableNumber}`
                 : 'À emporter';
 
-            alert(`🎉 Commande confirmée !\nTotal: ${cartSummary.total.toFixed(2)} ${currency}\nService: ${serviceType}`);
+            const clientInfo = orderConfig.type === 'takeaway' && clientNumber
+                ? `\nVotre numéro: ${clientNumber}`
+                : '';
+
+            alert(`🎉 Commande confirmée !
+                \nNuméro de commande: ${orderId}
+                \nTotal: ${cartSummary.total.toFixed(2)} ${currency}
+                \nService: ${serviceType}${clientInfo}
+                \nTemps estimé: ${getEstimatedTime()}`);
+
+            // Vider le panier et rediriger
             await clearCart();
             navigateWithSlug('/menu');
+
         } catch (error) {
-            console.error('Erreur commande:', error);
-            alert('❌ Erreur lors de la commande. Veuillez réessayer.');
+            console.error('❌ Erreur lors de la commande:', error);
+            setCheckoutError(error instanceof Error ? error.message : 'Erreur inconnue lors de la commande');
         } finally {
             setShowCheckout(false);
         }
@@ -205,7 +246,7 @@ const CartPage: React.FC = () => {
         );
     }
 
-    // Rendu panier vide avec thème dynamique
+    // Rendu panier vide
     if (cartItems.length === 0 && !showCheckout) {
         return (
             <div className="min-h-screen theme-bg-gradient theme-foreground-text">
@@ -226,7 +267,9 @@ const CartPage: React.FC = () => {
                     <div className="theme-card-bg rounded-full p-8 mb-6 backdrop-blur-sm">
                         <ShoppingCart size={80} className="theme-secondary-text" />
                     </div>
-                    <h2 className="text-3xl font-bold mb-3 text-center theme-foreground-text">Votre panier est vide</h2>
+                    <h2 className="text-3xl font-bold mb-3 text-center theme-foreground-text">
+                        Votre panier est vide
+                    </h2>
                     <p className="theme-secondary-text text-center mb-8 max-w-md leading-relaxed">
                         Découvrez nos délicieux plats et ajoutez vos favoris au panier pour commencer votre commande
                     </p>
@@ -259,7 +302,7 @@ const CartPage: React.FC = () => {
 
     return (
         <div className="min-h-screen theme-bg-gradient theme-foreground-text">
-            {/* Header avec thème dynamique */}
+            {/* Header */}
             <header className="sticky top-0 z-50 theme-header-bg theme-border border-b theme-shadow">
                 <div className="flex items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-2 theme-button-primary px-3 py-1 rounded-full">
@@ -281,9 +324,9 @@ const CartPage: React.FC = () => {
                 </div>
             </header>
 
-            {/* Contenu principal avec thème */}
+            {/* Contenu principal */}
             <div className="px-4 py-6 pb-32 max-w-4xl mx-auto">
-                {/* Info service configuré avec possibilité de modifier */}
+                {/* Info service configuré */}
                 {isOrderConfigured && orderConfig && (
                     <div className="mb-8">
                         <h3 className="text-xl font-bold theme-foreground-text mb-4 flex items-center gap-2">
@@ -314,168 +357,28 @@ const CartPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Articles du panier avec cartes thématiques */}
+                {/* Articles du panier */}
                 <div className="mb-8">
                     <h3 className="text-xl font-bold theme-foreground-text mb-4 flex items-center gap-2">
                         🛒 Vos articles ({cartSummary.itemsCount})
                     </h3>
                     <div className="space-y-4">
                         {cartItems.map((item) => (
-                            <div key={item.cartItemId} className="theme-card-bg backdrop-blur-sm rounded-2xl p-6 theme-border theme-shadow hover:theme-shadow-lg transition-all">
-                                {/* En-tête de l'article */}
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <h4 className="font-bold text-lg theme-foreground-text">{item.name} {item.emoji}</h4>
-                                        </div>
-                                        <p className="theme-secondary-text text-sm">{item.description}</p>
-                                        <p className="text-xs theme-secondary-text mt-1">
-                                            Ajouté il y a {Math.round((Date.now() - item.addedAt) / 60000)} min
-                                        </p>
-                                    </div>
-
-                                    {/* Actions rapides avec thème */}
-                                    <div className="flex items-center gap-2 ml-4">
-                                        <button
-                                            onClick={() => handleDuplicateItem(item.cartItemId)}
-                                            disabled={processingItems.has(item.cartItemId)}
-                                            className="theme-accent-text hover:opacity-80 transition-colors p-2 rounded-lg theme-card-bg backdrop-blur-sm"
-                                            title="Dupliquer l'article"
-                                        >
-                                            {processingItems.has(item.cartItemId) ? (
-                                                <Loader2 size={18} className="animate-spin" />
-                                            ) : (
-                                                <Copy size={18} />
-                                            )}
-                                        </button>
-                                        <button
-                                            onClick={() => handleRemoveItem(item.cartItemId)}
-                                            disabled={processingItems.has(item.cartItemId)}
-                                            className="theme-alert-text hover:opacity-80 transition-colors p-2 rounded-lg theme-card-bg backdrop-blur-sm"
-                                            title="Supprimer l'article"
-                                        >
-                                            {processingItems.has(item.cartItemId) ? (
-                                                <Loader2 size={18} className="animate-spin" />
-                                            ) : (
-                                                <Trash2 size={18} />
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Instructions spéciales avec thème */}
-                                {editingInstructions === item.cartItemId ? (
-                                    <div className="mb-4 p-4 theme-card-bg rounded-xl theme-border">
-                                        <label className="block text-sm font-medium theme-foreground-text mb-2">Instructions spéciales</label>
-                                        <textarea
-                                            value={tempInstructions}
-                                            onChange={(e) => setTempInstructions(e.target.value)}
-                                            placeholder="Ex: Sans oignons, bien cuit, sauce à part..."
-                                            className="w-full theme-input resize-none focus:theme-primary-focus transition-all"
-                                            rows={3}
-                                            maxLength={200}
-                                        />
-                                        <div className="flex justify-between items-center mt-2">
-                                            <span className="text-xs theme-secondary-text">{tempInstructions.length}/200</span>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={handleSaveInstructions}
-                                                    disabled={processingItems.has(item.cartItemId)}
-                                                    className="theme-success-text px-3 py-1 rounded-lg text-sm hover:opacity-80 transition-colors theme-card-bg flex items-center gap-1"
-                                                >
-                                                    {processingItems.has(item.cartItemId) ? (
-                                                        <Loader2 size={14} className="animate-spin" />
-                                                    ) : (
-                                                        <CheckCircle size={14} />
-                                                    )}
-                                                    Sauvegarder
-                                                </button>
-                                                <button
-                                                    onClick={handleCancelEdit}
-                                                    className="theme-secondary-text px-3 py-1 rounded-lg text-sm hover:opacity-80 transition-colors theme-card-bg"
-                                                >
-                                                    Annuler
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : item.instructions ? (
-                                    <div className="mb-4 p-4 theme-accent-gradient-text bg-opacity-10 theme-border rounded-xl">
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <p className="text-xs theme-accent-text font-medium mb-1 flex items-center gap-1">
-                                                    <MessageSquare size={12} />
-                                                    Instructions spéciales:
-                                                </p>
-                                                <p className="text-sm theme-foreground-text">{item.instructions}</p>
-                                            </div>
-                                            <button
-                                                onClick={() => handleEditInstructions(item.cartItemId, item.instructions)}
-                                                className="theme-accent-text hover:opacity-80 transition-colors p-1"
-                                                title="Modifier les instructions"
-                                            >
-                                                <Edit3 size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="mb-4">
-                                        <button
-                                            onClick={() => handleEditInstructions(item.cartItemId, '')}
-                                            className="theme-secondary-text hover:theme-primary-text transition-colors text-sm flex items-center gap-2 p-2 rounded-lg theme-card-bg hover:opacity-80"
-                                        >
-                                            <Edit3 size={14} />
-                                            Ajouter des instructions spéciales
-                                        </button>
-                                    </div>
-                                )}
-
-                                {/* Contrôles quantité et prix avec devise */}
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            onClick={() => handleQuantityChange(item.cartItemId, item.quantity - 1)}
-                                            disabled={processingItems.has(item.cartItemId)}
-                                            className="w-10 h-10 rounded-full theme-button-secondary flex items-center justify-center hover:opacity-80 transition-all disabled:opacity-50 disabled:cursor-not-allowed theme-border"
-                                        >
-                                            {processingItems.has(item.cartItemId) ? (
-                                                <Loader2 size={16} className="animate-spin" />
-                                            ) : (
-                                                <Minus size={16} />
-                                            )}
-                                        </button>
-
-                                        <div className="text-center min-w-[3rem]">
-                                            <span className="font-bold text-xl theme-foreground-text">{item.quantity}</span>
-                                            <p className="text-xs theme-secondary-text">article{item.quantity > 1 ? 's' : ''}</p>
-                                        </div>
-
-                                        <button
-                                            onClick={() => handleQuantityChange(item.cartItemId, item.quantity + 1)}
-                                            disabled={processingItems.has(item.cartItemId)}
-                                            className="w-10 h-10 rounded-full theme-button-secondary flex items-center justify-center hover:opacity-80 transition-all theme-border disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {processingItems.has(item.cartItemId) ? (
-                                                <Loader2 size={16} className="animate-spin" />
-                                            ) : (
-                                                <Plus size={16} />
-                                            )}
-                                        </button>
-                                    </div>
-
-                                    <div className="text-right">
-                                        <p className="text-sm theme-secondary-text">{item.price} {currency} × {item.quantity}</p>
-                                        <p className="font-bold text-xl theme-gradient-text">
-                                            {(item.price * item.quantity).toFixed(2)} {currency}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                            <CartItem
+                                key={item.cartItemId}
+                                item={item}
+                                currency={currency}
+                                isProcessing={processingItems.has(item.cartItemId)}
+                                onRemove={handleRemoveItem}
+                                onQuantityChange={handleQuantityChange}
+                                onDuplicate={handleDuplicateItem}
+                                onUpdateInstructions={handleUpdateInstructions}
+                            />
                         ))}
                     </div>
                 </div>
 
-                {/* Note pour la commande avec thème */}
+                {/* Note pour la commande */}
                 <div className="mb-8">
                     <h3 className="text-lg font-bold theme-foreground-text mb-3 flex items-center gap-2">
                         📝 Note pour le restaurant (optionnel)
@@ -495,51 +398,15 @@ const CartPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Résumé de la commande avec thème et devise */}
-                <div className="theme-card-bg backdrop-blur-sm rounded-2xl p-6 theme-border mb-8 theme-shadow">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 theme-foreground-text">
-                        📊 Résumé de la commande
-                    </h3>
-
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center theme-secondary-text">
-                            <span>Sous-total ({cartSummary.itemsCount} articles)</span>
-                            <span className="font-medium">{cartSummary.subtotal.toFixed(2)} {currency}</span>
-                        </div>
-
-                        <div className="flex justify-between items-center theme-secondary-text">
-                            <span>Frais de service (5%)</span>
-                            <span className="font-medium">{cartSummary.serviceFee.toFixed(2)} {currency}</span>
-                        </div>
-
-                        <div className="h-px theme-border my-4"></div>
-
-                        <div className="flex justify-between items-center">
-                            <span className="text-xl font-bold theme-foreground-text">Total</span>
-                            <span className="text-3xl font-bold theme-gradient-text">
-                                {cartSummary.total.toFixed(2)} {currency}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Temps estimé avec thème */}
-                    <div className="theme-card-bg rounded-xl p-4 mt-6 theme-border">
-                        <div className="flex items-center gap-3">
-                            <Clock size={20} className="theme-primary-text" />
-                            <div>
-                                <p className="font-medium theme-foreground-text">
-                                    Temps estimé
-                                </p>
-                                <p className="text-sm theme-secondary-text">
-                                    {getEstimatedTime()}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Résumé de la commande */}
+                <CartSummary
+                    cartSummary={cartSummary}
+                    currency={currency}
+                    estimatedTime={getEstimatedTime()}
+                />
             </div>
 
-            {/* Bouton de commande fixe avec thème et devise */}
+            {/* Bouton de commande fixe */}
             <div className="fixed bottom-0 left-0 right-0 theme-header-bg theme-border border-t p-4 z-50">
                 <div className="max-w-4xl mx-auto">
                     <div className="flex gap-3">
@@ -572,7 +439,7 @@ const CartPage: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* Erreurs de validation */}
+                    {/* Messages d'erreur */}
                     {!cartValidation.isValid && (
                         <div className="mt-2 p-2 bg-red-900/20 border border-red-700/30 rounded-lg">
                             <div className="flex items-center gap-2 theme-alert-text text-sm">
@@ -582,7 +449,6 @@ const CartPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Message si service non configuré */}
                     {!isOrderConfigured && (
                         <div className="mt-2 p-2 bg-orange-900/20 border border-orange-700/30 rounded-lg">
                             <div className="flex items-center gap-2 text-orange-300 text-sm">
@@ -591,45 +457,27 @@ const CartPage: React.FC = () => {
                             </div>
                         </div>
                     )}
+
+                    {checkoutError && (
+                        <div className="mt-2 p-2 bg-red-900/20 border border-red-700/30 rounded-lg">
+                            <div className="flex items-center gap-2 theme-alert-text text-sm">
+                                <AlertCircle size={16} />
+                                {checkoutError}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Overlay de traitement de commande avec thème et devise */}
-            {showCheckout && (
-                <div className="fixed inset-0 theme-backdrop backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="theme-modal-bg rounded-2xl p-8 text-center theme-border max-w-md w-full theme-shadow-lg">
-                        <div className="animate-spin rounded-full h-16 w-16 border-b-4 theme-primary-text mx-auto mb-6"></div>
-                        <h3 className="text-2xl font-bold mb-3 theme-foreground-text">Traitement de votre commande</h3>
-                        <p className="theme-secondary-text mb-6">Veuillez patienter pendant que nous préparons votre commande...</p>
-
-                        {/* Détails de la commande avec thème et devise */}
-                        <div className="theme-card-bg rounded-xl p-4 text-left space-y-2 backdrop-blur-sm">
-                            <div className="flex justify-between text-sm">
-                                <span className="theme-secondary-text">Restaurant:</span>
-                                <span className="theme-foreground-text font-medium">{restaurantName}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="theme-secondary-text">Articles:</span>
-                                <span className="theme-foreground-text font-medium">{cartSummary.itemsCount}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="theme-secondary-text">Total:</span>
-                                <span className="theme-primary-text font-bold">{cartSummary.total.toFixed(2)} {currency}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="theme-secondary-text">Service:</span>
-                                <span className="theme-foreground-text font-medium">
-                                    {getOrderIcon()} {getOrderDisplayName()}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 text-xs theme-secondary-text">
-                            ⏱️ Cette opération peut prendre quelques secondes
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Modal de traitement de commande */}
+            <CheckoutModal
+                isOpen={showCheckout}
+                restaurantName={restaurantName}
+                cartSummary={cartSummary}
+                currency={currency}
+                serviceIcon={getOrderIcon()}
+                serviceName={getOrderDisplayName()}
+            />
         </div>
     );
 };
