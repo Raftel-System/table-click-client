@@ -1,10 +1,12 @@
+// src/pages/DevPage.tsx - Updated with Printer Tab
 import React, { useState } from 'react';
 import ConfigTab from '../components/dev/ConfigTab';
 import ThemesTab from '../components/dev/ThemesTab';
 import MenuTab from '../components/dev/MenuTab';
+import PrinterTab from '../components/dev/PrinterTab';
 
 const DevPage: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'config' | 'themes' | 'menu'>('config');
+    const [activeTab, setActiveTab] = useState<'config' | 'themes' | 'menu' | 'printer'>('config');
     const [message, setMessage] = useState<string | null>(null);
 
     const tabStyle = (isActive: boolean) => ({
@@ -34,7 +36,7 @@ const DevPage: React.FC = () => {
 
             {/* Tabs principaux */}
             <div style={{ marginBottom: '2rem', borderBottom: '1px solid #4b5563' }}>
-                <div style={{ display: 'flex', gap: '0' }}>
+                <div style={{ display: 'flex', gap: '0', flexWrap: 'wrap' }}>
                     <button
                         onClick={() => setActiveTab('config')}
                         style={tabStyle(activeTab === 'config')}
@@ -53,6 +55,12 @@ const DevPage: React.FC = () => {
                     >
                         🍽️ Gestion Menu
                     </button>
+                    <button
+                        onClick={() => setActiveTab('printer')}
+                        style={tabStyle(activeTab === 'printer')}
+                    >
+                        🖨️ Test Imprimante
+                    </button>
                 </div>
             </div>
 
@@ -69,14 +77,20 @@ const DevPage: React.FC = () => {
                 <MenuTab onMessage={setMessage} />
             )}
 
+            {activeTab === 'printer' && (
+                <PrinterTab onMessage={setMessage} />
+            )}
+
             {/* Message global */}
             {message && (
                 <p style={{
                     marginTop: '1rem',
                     padding: '0.75rem',
-                    backgroundColor: message.startsWith('✅') ? '#166534' : '#7f1d1d',
+                    backgroundColor: message.startsWith('✅') ? '#166534' :
+                        message.startsWith('🔄') ? '#1e40af' : '#7f1d1d',
                     color: '#fff',
-                    borderRadius: '8px'
+                    borderRadius: '8px',
+                    fontSize: '0.875rem'
                 }}>
                     {message}
                 </p>
