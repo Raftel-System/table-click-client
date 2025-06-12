@@ -5,11 +5,35 @@ interface PrinterTabProps {
     onMessage: (message: string) => void;
 }
 
+// Types pour les réponses de l'API imprimante
+interface PrinterHealthResponse {
+    status: string;
+    message?: string;
+    timestamp?: string;
+    uptime?: number;
+}
+
+interface PrinterPrintResponse {
+    success: boolean;
+    message: string;
+    printJobId?: string;
+    timestamp?: string;
+}
+
+interface PrinterErrorResponse {
+    error: string;
+    details?: string;
+    code?: number;
+}
+
+// Type union pour toutes les réponses possibles
+type PrinterApiResponse = PrinterHealthResponse | PrinterPrintResponse | PrinterErrorResponse | null;
+
 const PrinterTab: React.FC<PrinterTabProps> = ({ onMessage }) => {
     const [printerUrl, setPrinterUrl] = useState('http://192.168.1.142:3001');
     const [authToken, setAuthToken] = useState('ma-cle-secrete');
     const [isLoading, setIsLoading] = useState(false);
-    const [lastResponse, setLastResponse] = useState<any>(null);
+    const [lastResponse, setLastResponse] = useState<PrinterApiResponse>(null);
 
     const inputStyle = {
         width: '100%',
@@ -48,13 +72,12 @@ const PrinterTab: React.FC<PrinterTabProps> = ({ onMessage }) => {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ma-cle-secrete'
                 },
+                // Timeout après 10 secondes
                 signal: AbortSignal.timeout(10000)
             });
 
-
-            const data = await response.json();
+            const data = await response.json() as PrinterHealthResponse;
             setLastResponse(data);
 
             if (response.ok) {
@@ -77,7 +100,7 @@ const PrinterTab: React.FC<PrinterTabProps> = ({ onMessage }) => {
                 onMessage('❌ Erreur inconnue lors de la connexion');
             }
 
-            setLastResponse({ error: error instanceof Error ? error.message : 'Erreur inconnue' });
+            setLastResponse({ error: error instanceof Error ? error.message : 'Erreur inconnue' } as PrinterErrorResponse);
         } finally {
             setIsLoading(false);
         }
@@ -109,7 +132,7 @@ const PrinterTab: React.FC<PrinterTabProps> = ({ onMessage }) => {
                 signal: AbortSignal.timeout(15000)
             });
 
-            const data = await response.json();
+            const data = await response.json() as PrinterPrintResponse;
             setLastResponse(data);
 
             if (response.ok) {
@@ -120,7 +143,7 @@ const PrinterTab: React.FC<PrinterTabProps> = ({ onMessage }) => {
         } catch (error) {
             console.error('Erreur test impression:', error);
             onMessage('❌ Erreur lors du test d\'impression: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
-            setLastResponse({ error: error instanceof Error ? error.message : 'Erreur inconnue' });
+            setLastResponse({ error: error instanceof Error ? error.message : 'Erreur inconnue' } as PrinterErrorResponse);
         } finally {
             setIsLoading(false);
         }
