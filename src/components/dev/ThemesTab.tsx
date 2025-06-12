@@ -37,7 +37,7 @@ const ThemesTab: React.FC<ThemesTabProps> = ({ onMessage }) => {
     const [themeDescription, setThemeDescription] = useState('');
     const [isDefaultTheme, setIsDefaultTheme] = useState(false);
 
-    // Colors
+    // Colors - SUPPRIMÉ les variables non utilisées
     const [primaryFrom, setPrimaryFrom] = useState('#f59e0b');
     const [primaryTo, setPrimaryTo] = useState('#eab308');
     const [accentFrom, setAccentFrom] = useState('#06b6d4');
@@ -45,11 +45,13 @@ const ThemesTab: React.FC<ThemesTabProps> = ({ onMessage }) => {
     const [backgroundFrom, setBackgroundFrom] = useState('#0f172a');
     const [backgroundVia, setBackgroundVia] = useState('#111827');
     const [backgroundTo, setBackgroundTo] = useState('#000000');
-    const [backgroundBase, setBackgroundBase] = useState('#000000');
-    const [foreground, setForeground] = useState('#fefefe');
-    const [textSecondary, setTextSecondary] = useState('#9ca3af');
-    const [alert, setAlert] = useState('#ef4444');
-    const [success, setSuccess] = useState('#16a34a');
+
+    // Variables utilisées dans handleCreateTheme - CONSERVÉES
+    const backgroundBase = '#000000';
+    const foreground = '#fefefe';
+    const textSecondary = '#9ca3af';
+    const alert = '#ef4444';
+    const success = '#16a34a';
 
     const inputStyle = {
         width: '100%',

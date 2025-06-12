@@ -25,6 +25,13 @@ export interface Order {
     restaurantSlug: string;
 }
 
+// Type pour les champs conditionnels de la commande
+interface ConditionalOrderFields {
+    tableNumber?: number;
+    numeroClient?: number;
+    noteCommande?: string;
+}
+
 export class OrderService {
     /**
      * Génère un numéro client automatique (1-2000, réinitialisé chaque jour)
@@ -71,11 +78,12 @@ export class OrderService {
         const cleaned = {} as T;
         for (const [key, value] of Object.entries(obj)) {
             if (value !== undefined) {
-                (cleaned as any)[key] = OrderService.cleanObjectForFirebase(value);
+                (cleaned as Record<string, unknown>)[key] = OrderService.cleanObjectForFirebase(value);
             }
         }
         return cleaned;
     }
+
     /**
      * Crée une nouvelle commande dans la Realtime Database
      */
@@ -122,8 +130,8 @@ export class OrderService {
                 mode: orderConfig.type === 'dine-in' ? 'sur_place' as const : 'emporter' as const
             };
 
-            // Ajouter les champs conditionnels seulement s'ils existent
-            const conditionalFields: Record<string, any> = {};
+            // Ajouter les champs conditionnels seulement s'ils existent - CORRIGÉ
+            const conditionalFields: ConditionalOrderFields = {};
 
             if (orderConfig.type === 'dine-in' && orderConfig.tableNumber) {
                 conditionalFields.tableNumber = orderConfig.tableNumber;
