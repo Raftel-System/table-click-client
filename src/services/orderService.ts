@@ -15,7 +15,8 @@ export interface OrderItem {
 export interface Order {
     orderId: string;
     createdAt: string;
-    status: 'en_attente' | 'en_preparation' | 'pret' | 'livre' | 'annule';
+    status: 'pending';
+    source: 'client';
     items: OrderItem[];
     total: number;
     mode: 'sur_place' | 'emporter';
@@ -121,16 +122,19 @@ export class OrderService {
                 clientNumber = await OrderService.generateClientNumber(restaurantSlug);
             }
 
-            // Créer l'objet commande de base
+            // ✅ Créer l'objet commande de base avec les nouveaux attributs
             const baseOrder = {
+                orderId,
+                restaurantSlug,
                 createdAt: new Date().toISOString(),
-                status: 'en_attente' as const,
+                status: 'pending' as const, // ✅ Forcé à 'pending' par défaut
                 items: orderItems,
                 total: total,
-                mode: orderConfig.type === 'dine-in' ? 'sur_place' as const : 'emporter' as const
+                mode: orderConfig.type === 'dine-in' ? 'sur_place' as const : 'emporter' as const, // ✅ Mode ajouté uniformément
+                source: 'client' as const // ✅ Nouveau champ source ajouté
             };
 
-            // Ajouter les champs conditionnels seulement s'ils existent - CORRIGÉ
+            // Ajouter les champs conditionnels seulement s'ils existent
             const conditionalFields: ConditionalOrderFields = {};
 
             if (orderConfig.type === 'dine-in' && orderConfig.tableNumber) {
@@ -151,7 +155,7 @@ export class OrderService {
             // Nettoyer l'objet pour Firebase (supprimer les undefined)
             const cleanedOrder = OrderService.cleanObjectForFirebase(order);
 
-            // Déterminer le chemin dans la base de données
+            // ✅ Déterminer le chemin dans la base de données (mode unifié dans l'ordre)
             let dbPath: string;
             if (orderConfig.type === 'dine-in' && orderConfig.tableNumber) {
                 dbPath = `orders/${restaurantSlug}/tables/${orderConfig.tableNumber}/${orderId}`;
@@ -167,6 +171,9 @@ export class OrderService {
             console.log(`📍 Chemin: ${dbPath}`);
             console.log(`📊 Total: ${total}€`);
             console.log(`🍽️ Items: ${orderItems.length}`);
+            console.log(`🎯 Mode: ${order.mode}`); // ✅ Log du mode
+            console.log(`📱 Source: ${order.source}`); // ✅ Log de la source
+            console.log(`⏳ Status: ${order.status}`); // ✅ Log du status
             if (clientNumber) {
                 console.log(`🔢 Numéro client: ${clientNumber}`);
             }

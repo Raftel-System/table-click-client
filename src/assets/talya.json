@@ -1,0 +1,38 @@
+
+{
+  "id": "talya",
+  "nom": "Talya – Méditerranéen authentique",
+  "description": "Thème inspiré du restaurant Talya avec turquoise, or et tons sable chaleureux",
+  "type": "light",
+  "colors": {
+    "primary": {
+      "from": "#00afaf",
+      "to": "#008c8c"
+    },
+    "accent": {
+      "from": "#e1c337",
+      "to": "#b49c2c"
+    },
+    "background": {
+      "gradient": {
+        "from": "#f4efe9",
+        "via": "#e9dfd3",
+        "to": "#d2bfa7"
+      },
+      "base": "#f4efe9"
+    },
+    "foreground": "#1e293b",
+    "textSecondary": "#475569",
+    "alert": "#dc2626",
+    "success": "#10b981",
+    "cardBackground": "#ffffff",
+    "cardBorder": "#d2bfa7",
+    "buttonText": "#ffffff"
+  },
+  "gradients": {
+    "action": "bg-gradient-to-r from-teal-600 to-teal-700",
+    "background": "bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50"
+  },
+  "createdAt": "2025-01-20T15:30:00Z",
+  "isDefault": false
+}

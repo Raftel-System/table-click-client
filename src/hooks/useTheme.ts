@@ -8,6 +8,7 @@ import sunriseTheme from '../assets/sunrise.json';
 import daylightTheme from '../assets/daylight.json';
 import oceanTheme from '../assets/ocean.json';
 import cleanTheme from '../assets/clean.json';
+import talyaTheme from '../assets/talya.json';
 
 export interface Theme {
     id: string;
@@ -60,7 +61,8 @@ const LOCAL_THEMES: Record<string, Theme> = {
     sunrise: { ...sunriseTheme, type: 'dark' } as Theme,
     daylight: { ...daylightTheme, type: 'light' } as Theme,
     ocean: { ...oceanTheme, type: 'light' } as Theme,
-    clean: { ...cleanTheme, type: 'light' } as Theme
+    clean: { ...cleanTheme, type: 'light' } as Theme,
+    talya: {...talyaTheme, type: 'light' } as Theme,
 };
 
 // Fonction pour détecter automatiquement si un thème est clair ou sombre
