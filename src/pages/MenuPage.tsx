@@ -65,9 +65,11 @@ const MenuPage: React.FC = () => {
         setShowItemDetail(null);
     };
 
-    // Gestion de l'ajout au panier depuis la modal avec devise
+    // Gestion de l'ajout au panier depuis la modal avec devise (DÉSACTIVÉ en mode consultation)
     const handleAddToCart = async (item: MenuItem, quantity: number, instructions?: string) => {
-        await addToCart(item, quantity, instructions);
+        // Mode consultation - commande sur place uniquement
+        console.log('Mode consultation : commande sur place uniquement');
+        // await addToCart(item, quantity, instructions);
     };
 
     // Gestion de la navigation
@@ -173,7 +175,7 @@ const MenuPage: React.FC = () => {
 
     return (
         <div className="min-h-screen theme-bg-gradient text-white">
-            {/* Header */}
+            {/* Header avec bannière personnalisée */}
             <header className="sticky top-0 z-50 theme-header-bg theme-border border-b theme-shadow">
                 <div className="flex items-center justify-between px-4 py-3">
                     {/* Logo */}
@@ -188,26 +190,61 @@ const MenuPage: React.FC = () => {
                         </h1>
                     </div>
 
-                    {/* Bouton panier */}
+                    {/* Bouton panier (DÉSACTIVÉ en mode consultation) */}
                     <button
-                        onClick={() => navigate(`/${restaurantSlug}/cart`)}
-                        className="theme-button-primary px-4 py-2 rounded-full flex items-center gap-2 font-medium transition-all transform hover:scale-105 theme-shadow-lg relative"
+                        onClick={() => {
+                            // Mode consultation - afficher un message
+                            alert('Commande sur place uniquement. Veuillez faire appel à votre serveur.');
+                        }}
+                        className="theme-button-secondary px-4 py-2 rounded-full flex items-center gap-2 font-medium transition-all transform hover:scale-105 theme-shadow-lg relative opacity-60 cursor-not-allowed"
                     >
                         <ShoppingCart size={18} />
-                        <span className="hidden sm:inline">Panier</span>
-                        {getCartItemsCount() > 0 && (
-                            <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold animate-pulse">
-                                {getCartItemsCount()}
-                            </div>
-                        )}
+                        <span className="hidden sm:inline">Consultation</span>
+                        {/* Badge mode consultation */}
+                        <div className="absolute -top-1 -right-1 bg-orange-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold">
+                            !
+                        </div>
                     </button>
                 </div>
 
-                {/* Titre restaurant et info service */}
-                <div className="text-center pb-4">
-                    <h1 className="text-3xl font-bold theme-gradient-text">
-                        {restaurantName}
-                    </h1>
+                {/* BANNIÈRE PERSONNALISÉE */}
+                <div className="relative h-48 sm:h-64 w-full overflow-hidden">
+                    <img 
+                        src="/assets/restaurant-banner.webp" // Votre image en .webp
+                        alt="Bannière restaurant"
+                        className="object-cover w-full h-full transition-transform duration-700 hover:scale-105"
+                        onError={(e) => {
+                            // Image de fallback si l'image principale n'existe pas
+                            console.log('Image principale non trouvée, utilisation du fallback');
+                            e.currentTarget.src = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop&auto=format";
+                        }}
+                        onLoad={() => {
+                            console.log('✅ Image de bannière chargée avec succès');
+                        }}
+                    />
+                    
+                    {/* Overlay gradient moins opaque pour mieux voir l'image */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-6">
+                        <div className="w-full">
+                            <h2 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-2xl mb-2">
+                                {restaurantName}
+                            </h2>
+                            <p className="text-white/95 text-base sm:text-lg drop-shadow-lg mb-3">
+                                Découvrez notre menu authentique
+                            </p>
+                            
+                            {/* Badge mode consultation avec meilleure visibilité */}
+                            <div className="inline-flex items-center gap-2 bg-orange-500/95 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg border border-orange-400/20">
+                                <span>👨‍🍳</span>
+                                Mode consultation - Commande sur place uniquement
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Debug: Affichage pour vérifier le chargement */}
+                    <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded opacity-30">
+                        Banner loaded
+                    </div>
                 </div>
             </header>
 
@@ -268,7 +305,7 @@ const MenuPage: React.FC = () => {
                 onNavigate={handleNavigate}
             />
 
-            {/* Item Detail Modal Component avec devise */}
+            {/* Item Detail Modal Component avec devise (MODE CONSULTATION) */}
             <ItemDetailModal
                 item={showItemDetail}
                 isOpen={!!showItemDetail}

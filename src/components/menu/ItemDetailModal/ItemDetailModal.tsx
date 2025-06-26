@@ -1,7 +1,19 @@
+// src/components/menu/ItemDetailModal/ItemDetailModal.tsx - Mode consultation
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, ShoppingCart, Star, Flame, Loader2 } from 'lucide-react';
-import type {MenuItem} from '../MenuItems/MenuItems';
-import './ItemDetailModal.module.css';
+import { X, Plus, Minus, ShoppingCart, Flame, Star, Loader2, Eye } from 'lucide-react';
+
+export interface MenuItem {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    emoji: string;
+    isPopular?: boolean;
+    isSpecial?: boolean;
+    isAvailable?: boolean;
+    photo?: string;
+}
 
 interface ItemDetailModalProps {
     item: MenuItem | null;
@@ -12,34 +24,24 @@ interface ItemDetailModalProps {
 }
 
 const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
-                                                             item,
-                                                             isOpen,
-                                                             onClose,
-                                                             onAddToCart,
-                                                             currency = '€'
-                                                         }) => {
+    item,
+    isOpen,
+    onClose,
+    onAddToCart,
+    currency = '€'
+}) => {
     const [quantity, setQuantity] = useState(1);
     const [instructions, setInstructions] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Reset state when modal opens/closes
+    // Reset quand la modal s'ouvre/ferme
     useEffect(() => {
-        if (isOpen && item) {
+        if (isOpen) {
             setQuantity(1);
             setInstructions('');
             setIsProcessing(false);
-            // Prevent background scroll
-            document.body.style.overflow = 'hidden';
-        } else {
-            // Restore background scroll
-            document.body.style.overflow = 'unset';
         }
-
-        // Cleanup on unmount
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isOpen, item]);
+    }, [isOpen]);
 
     const getImageUrl = (item: MenuItem) => {
         if (item.photo) {
@@ -66,18 +68,10 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         }
     };
 
+    // FONCTION DÉSACTIVÉE - Mode consultation uniquement
     const handleAddToCart = async () => {
-        if (!item) return;
-
-        setIsProcessing(true);
-        try {
-            await onAddToCart(item, quantity, instructions.trim() || undefined);
-            onClose();
-        } catch (error) {
-            console.error('Erreur lors de l\'ajout au panier:', error);
-        } finally {
-            setIsProcessing(false);
-        }
+        // Mode consultation - ne rien faire
+        return;
     };
 
     const handleBackdropClick = (e: React.MouseEvent) => {
@@ -113,88 +107,77 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
                 {/* Tout le contenu scrollable */}
                 <div className="flex-1 overflow-y-auto px-6 pb-6 theme-scrollbar">
-                    {/* Image avec overlay - seulement si photo existe */}
-                    {item.photo && (
-                        <div className="relative mb-6 mt-2">
-                            <img
-                                src={getImageUrl(item)}
-                                alt={item.name}
-                                className="w-full h-48 object-cover rounded-2xl theme-shadow"
-                            />
+                    {/* Image mise en valeur - TOUJOURS affichée */}
+                    <div className="relative mb-6 mt-2">
+                        <img
+                            src={getImageUrl(item)}
+                            alt={item.name}
+                            className="w-full h-56 sm:h-64 object-cover rounded-2xl theme-shadow-lg hover:scale-[1.02] transition-transform duration-500"
+                            loading="eager"
+                        />
 
-                            {/* Gradient overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-2xl"></div>
+                        {/* Gradient overlay plus subtil pour mieux voir l'image */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent rounded-2xl"></div>
 
-                            {/* Badges overlay */}
-                            <div className="absolute top-3 left-3 flex gap-2">
-                                {item.isPopular && (
-                                    <div className="theme-badge-popular px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                                        <Flame size={10} />
-                                        POPULAIRE
-                                    </div>
-                                )}
-                                {item.isSpecial && (
-                                    <div className="theme-badge-special px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                                        <Star size={10} />
-                                        SPÉCIAL
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Prix en overlay */}
-                            <div className="absolute bottom-3 right-3 theme-card-bg backdrop-blur-sm rounded-full px-3 py-1.5">
-                                <span className="text-xl font-bold theme-gradient-text">
-                                    {item.price}{currency}
-                                </span>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Item info */}
-                    <div className="mb-6">
-                        <div className="flex items-start justify-between mb-3">
-                            <h3 className="text-2xl font-bold theme-foreground-text flex-1">
-                                {item.name} {item.emoji}
-                            </h3>
-                            {/* Prix affiché ici si pas d'image */}
-                            {!item.photo && (
-                                <div className="theme-card-bg backdrop-blur-sm rounded-full px-3 py-1.5 ml-3">
-                                    <span className="text-xl font-bold theme-gradient-text">
-                                        {item.price}{currency}
-                                    </span>
+                        {/* Badges overlay avec fond semi-transparent */}
+                        <div className="absolute top-3 left-3 flex gap-2">
+                            {item.isPopular && (
+                                <div className="theme-badge-popular px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 backdrop-blur-sm border border-white/20">
+                                    <Flame size={12} />
+                                    POPULAIRE
+                                </div>
+                            )}
+                            {item.isSpecial && (
+                                <div className="theme-badge-special px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 backdrop-blur-sm border border-white/20">
+                                    <Star size={12} />
+                                    SPÉCIAL
                                 </div>
                             )}
                         </div>
 
-                        {/* Badges si pas d'image */}
-                        {!item.photo && (
-                            <div className="flex gap-2 mb-3">
-                                {item.isPopular && (
-                                    <div className="theme-badge-popular px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                                        <Flame size={10} />
-                                        POPULAIRE
-                                    </div>
-                                )}
-                                {item.isSpecial && (
-                                    <div className="theme-badge-special px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                                        <Star size={10} />
-                                        SPÉCIAL
-                                    </div>
-                                )}
+                        {/* Indicateur de zoom subtil */}
+                        <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-sm text-white rounded-full p-2 opacity-70">
+                            <Eye size={16} />
+                        </div>
+
+                        {/* Prix en overlay en bas à droite */}
+                        <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-white px-3 py-2 rounded-xl">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xl font-bold text-yellow-400">
+                                    {item.price}
+                                </span>
+                                <span className="text-sm opacity-90">{currency}</span>
                             </div>
-                        )}
+                        </div>
+                    </div>
+
+                    {/* Titre et prix */}
+                    <div className="mb-6">
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                                <h2 className="text-2xl font-bold theme-foreground-text mb-2 leading-tight">
+                                    {item.emoji} {item.name}
+                                </h2>
+                                <div className="flex items-baseline gap-1 mb-3">
+                                    <span className="text-3xl font-bold theme-gradient-text">
+                                        {item.price}
+                                    </span>
+                                    <span className="text-lg theme-secondary-text">{currency}</span>
+                                </div>
+                            </div>
+                        </div>
 
                         <p className="theme-secondary-text leading-relaxed text-sm">
                             {item.description}
                         </p>
                     </div>
 
-                    {/* Quantity selector */}
+                    {/* MODE CONSULTATION - Affichage du prix et quantité pour information */}
                     <div className="mb-6">
                         <h4 className="text-lg font-bold theme-foreground-text mb-3 flex items-center gap-2">
-                            📦 Quantité
+                            📦 Quantité (consultation)
                         </h4>
-                        <div className="flex items-center justify-center gap-4 theme-card-bg backdrop-blur-sm rounded-xl py-4 theme-border border">
+                        <div className="flex items-center justify-center gap-4 theme-card-bg backdrop-blur-sm rounded-xl py-4 theme-border border opacity-60">
                             <button
                                 onClick={() => handleQuantityChange(quantity - 1)}
                                 disabled={quantity <= 1}
@@ -222,58 +205,66 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Instructions spéciales */}
+                    {/* Instructions spéciales - Mode consultation */}
                     <div className="mb-6">
                         <h4 className="text-lg font-bold theme-foreground-text mb-3 flex items-center gap-2">
                             📝 Instructions spéciales
-                            <span className="text-sm font-normal theme-secondary-text">(optionnel)</span>
+                            <span className="text-sm font-normal theme-secondary-text">(consultation)</span>
                         </h4>
-                        <div className="relative">
+                        <div className="relative opacity-60">
                             <textarea
                                 value={instructions}
                                 onChange={(e) => setInstructions(e.target.value)}
-                                placeholder="Ex: Sans oignons, bien cuit, sauce à part, allergie aux fruits de mer..."
+                                placeholder="Exemple d'instructions : Sans oignons, bien cuit, sauce à part..."
                                 className="w-full theme-input resize-none focus:theme-primary-focus transition-all duration-300 min-h-[80px]"
                                 rows={3}
                                 maxLength={200}
+                                disabled
                             />
                             <div className="absolute bottom-3 right-3 text-xs theme-secondary-text theme-card-bg px-2 py-1 rounded">
                                 {instructions.length}/200
                             </div>
                         </div>
-                        {instructions.length > 0 && (
-                            <p className="text-xs theme-accent-text mt-2 flex items-center gap-1">
-                                ✓ Vos instructions seront transmises au chef
-                            </p>
-                        )}
+                        <p className="text-xs theme-secondary-text mt-2 flex items-center gap-1">
+                            ℹ️ Mode consultation - Communiquez vos préférences à votre serveur
+                        </p>
                     </div>
 
-                    {/* Note de service */}
-                    <p className="text-center text-xs theme-secondary-text mb-4 flex items-center justify-center gap-1">
-                        <span>⏱️</span>
-                        Les instructions spéciales peuvent affecter le temps de préparation
-                    </p>
+                    {/* Note de service en mode consultation */}
+                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="text-2xl">👨‍🍳</div>
+                            <div>
+                                <h4 className="font-bold text-orange-200 mb-1">Mode consultation</h4>
+                                <p className="text-orange-300/80 text-sm">
+                                    Pour commander cet article, veuillez faire appel à votre serveur qui prendra votre commande.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
-                    {/* Bouton d'ajout au panier */}
+                    {/* Bouton désactivé - Mode consultation */}
                     <button
-                        onClick={handleAddToCart}
-                        disabled={isProcessing}
-                        className="w-full theme-button-primary py-3.5 rounded-xl font-bold text-lg transition-all duration-300 flex items-center justify-center gap-3 theme-shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                        disabled
+                        className="w-full bg-gray-600 opacity-50 cursor-not-allowed py-3.5 rounded-xl font-bold text-lg transition-all duration-300 flex items-center justify-center gap-3 theme-shadow-lg mb-4 text-gray-300"
                     >
-                        {isProcessing ? (
-                            <>
-                                <Loader2 size={22} className="animate-spin" />
-                                <span>Ajout en cours...</span>
-                            </>
-                        ) : (
-                            <>
-                                <ShoppingCart size={22} />
-                                <span>
-                                    Ajouter au panier • {quantity} {quantity > 1 ? 'articles' : 'article'}
-                                </span>
-                            </>
-                        )}
+                        <Eye size={22} />
+                        <span>
+                            Commande sur place uniquement • {quantity} {quantity > 1 ? 'articles' : 'article'} • {(item.price * quantity).toFixed(2)}{currency}
+                        </span>
                     </button>
+
+                    {/* Informations complémentaires */}
+                    <div className="text-center text-xs theme-secondary-text space-y-1">
+                        <p className="flex items-center justify-center gap-1">
+                            <span>💡</span>
+                            Consultez les détails et communiquez vos préférences à votre serveur
+                        </p>
+                        <p className="flex items-center justify-center gap-1">
+                            <span>⏱️</span>
+                            Les instructions spéciales peuvent affecter le temps de préparation
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

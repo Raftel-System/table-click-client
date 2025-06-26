@@ -1,5 +1,6 @@
+// src/components/menu/MenuItems/MenuItems.tsx - Mode consultation
 import React from 'react';
-import { Star, Flame, Plus } from 'lucide-react';
+import { Star, Flame, Eye } from 'lucide-react';
 import './MenuItems.module.css';
 
 export interface MenuItem {
@@ -22,10 +23,10 @@ interface MenuItemsProps {
 }
 
 const MenuItems: React.FC<MenuItemsProps> = ({
-                                                 items,
-                                                 onItemClick,
-                                                 currency = '€'
-                                             }) => {
+    items,
+    onItemClick,
+    currency = '€'
+}) => {
     const getImageUrl = (item: MenuItem) => {
         if (item.photo) {
             return `/assets/menu/${item.photo}`;
@@ -48,35 +49,40 @@ const MenuItems: React.FC<MenuItemsProps> = ({
     return (
         <div className="space-y-6">
             {items.map((item) => (
-                <div key={item.id} className="group relative">
-                    {/* Badges */}
-                    <div className="flex gap-2 mb-3">
-                        {item.isPopular && (
-                            <div className="theme-badge-popular px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 theme-shadow-lg">
-                                <Flame size={12} />
-                                POPULAIRE
-                            </div>
-                        )}
-                        {item.isSpecial && (
-                            <div className="theme-badge-special px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 theme-shadow-lg">
-                                <Star size={12} />
-                                SPÉCIAL
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Item Card */}
-                    <div className="flex gap-4 theme-menu-card rounded-2xl p-5 transition-all duration-300 group">
+                <div
+                    key={item.id}
+                    className="group theme-card-bg backdrop-blur-sm rounded-2xl p-4 theme-border border hover:theme-shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+                    onClick={() => onItemClick(item)}
+                >
+                    <div className="flex gap-4 items-center">
                         <div className="flex-1">
-                            <h3
-                                className="text-xl font-bold theme-foreground-text mb-2 cursor-pointer hover:theme-primary-text transition-colors duration-300"
-                                onClick={() => onItemClick(item)}
-                            >
-                                {item.name} {item.emoji}
+                            {/* Badges */}
+                            <div className="flex gap-2 mb-3">
+                                {item.isPopular && (
+                                    <div className="theme-badge-popular px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                        <Flame size={10} />
+                                        POPULAIRE
+                                    </div>
+                                )}
+                                {item.isSpecial && (
+                                    <div className="theme-badge-special px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                        <Star size={10} />
+                                        SPÉCIAL
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Titre */}
+                            <h3 className="text-xl font-bold theme-foreground-text mb-2 group-hover:theme-primary-text transition-colors">
+                                {item.emoji} {item.name}
                             </h3>
-                            <p className="theme-secondary-text text-sm mb-4 leading-relaxed line-clamp-2">
+
+                            {/* Description */}
+                            <p className="theme-secondary-text text-sm mb-4 line-clamp-2 leading-relaxed">
                                 {item.description}
                             </p>
+
+                            {/* Prix et bouton - MODE CONSULTATION */}
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="text-2xl font-bold theme-gradient-text">
@@ -84,12 +90,17 @@ const MenuItems: React.FC<MenuItemsProps> = ({
                                     </span>
                                     <span className="text-sm theme-secondary-text font-medium">{currency}</span>
                                 </div>
+                                
+                                {/* BOUTON DÉSACTIVÉ - Mode consultation */}
                                 <button
-                                    onClick={() => onItemClick(item)}
-                                    className="theme-button-primary px-6 py-2.5 rounded-full font-bold flex items-center gap-2 transition-all duration-300 transform hover:scale-105 theme-shadow-lg"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onItemClick(item); // Ouvre quand même le détail pour consultation
+                                    }}
+                                    className="bg-gray-600 opacity-60 cursor-default px-6 py-2.5 rounded-full font-bold flex items-center gap-2 transition-all duration-300 theme-shadow text-gray-300"
                                 >
-                                    <Plus size={18} />
-                                    <span className="hidden sm:inline">Ajouter</span>
+                                    <Eye size={18} />
+                                    <span className="hidden sm:inline">Voir</span>
                                 </button>
                             </div>
                         </div>
