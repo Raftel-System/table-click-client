@@ -234,10 +234,10 @@ const MenuPage: React.FC = () => {
                             </p>
                             
                             {/* Badge mode consultation avec meilleure visibilité */}
-                            <div className="inline-flex items-center gap-2 bg-orange-500/95 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg border border-orange-400/20">
+                           {/*  <div className="inline-flex items-center gap-2 bg-orange-500/95 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg border border-orange-400/20">
                                 <span>👨‍🍳</span>
                                 Mode consultation - Commande sur place uniquement
-                            </div>
+                            </div> */}
                         </div>
                     </div>
 
@@ -277,8 +277,10 @@ const MenuPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Menu Items Component avec devise */}
-            <div className="px-4 py-6 pb-32">
+            {/* Menu Items Component avec devise 
+            pb-32 a ajouter quand on reprnd la version de commande
+            */}
+            <div className="px-4 py-6 ">
                 {filteredItems.length > 0 ? (
                     <MenuItems
                         items={filteredItems}
@@ -299,11 +301,11 @@ const MenuPage: React.FC = () => {
             </div>
 
             {/* Bottom Navigation Component */}
-            <BottomNavigation
+           {/*  <BottomNavigation
                 currentPath="menu"
                 cartItemsCount={getCartItemsCount()}
                 onNavigate={handleNavigate}
-            />
+            /> */}
 
             {/* Item Detail Modal Component avec devise (MODE CONSULTATION) */}
             <ItemDetailModal
